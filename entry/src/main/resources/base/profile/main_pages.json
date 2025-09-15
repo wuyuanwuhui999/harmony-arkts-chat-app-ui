@@ -1,0 +1,12 @@
+{
+  "src": [
+    "pages/LaunchPage",
+    "pages/UserPage",
+    "pages/LoginPage",
+    "pages/RegisterPage",
+    "pages/ForgetPasswordPage",
+    "pages/ResetPasswordPage",
+    "pages/UpdatePasswordPage",
+    "pages/ChatPage"
+  ]
+}

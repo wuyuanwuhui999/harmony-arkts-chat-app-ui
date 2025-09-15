@@ -1,0 +1,12 @@
+export const pageBackgroundColor:string = '#efefef'
+export const borderColor:string = '#e9e9e9'
+export const tabSelectedColor:string = '#ffae00'
+export const tabNormalColor:string = '#000000'
+export const blockColor:string = '#fff'
+export const disableTextColor:string = '#999999'
+export const lineBackgroundColor:string = '#2196f3'
+export const warnColor:string = '#f7453b';
+export const blueColor:string = '#3e7d9b';
+export const playerOuterCircleColor = 'rgba(0, 0, 0, 0.1)';
+export const blackBackgroundColor:string = 'rgba(0, 0, 0, 0.8)';
+export const textareaColor:string = '#dddddd';
