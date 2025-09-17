@@ -1,10 +1,10 @@
 import router from '@ohos.router';
-import { UserDataInterface } from '../interface/Index'
+import { UserDataType } from '../type/Index'
 import { HOST, USER_DATA } from '../common/constant';
 
 @Component
 export default struct AvaterComponent {
-  @StorageLink(USER_DATA) userData: UserDataInterface = {} as UserDataInterface;
+  @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
   @Prop dimensions: number;
 
   build() {

@@ -1,7 +1,7 @@
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import { resetPasswordService } from '../service/Index';
-import { EmailParamsInterface, UserDataInterface } from '../interface/Index';
+import { EmailParamsType, UserDataType } from '../type/Index';
 import { USER_DATA } from '../common/constant';
 import promptAction from '@ohos.promptAction'
 import display from '@ohos.display';
@@ -16,7 +16,7 @@ struct ResetPasswordPage {
   code: string = '';
   password: string = "";
   comfirmPassword: string = ""
-  email: string = (router.getParams() as EmailParamsInterface).email;
+  email: string = (router.getParams() as EmailParamsType).email;
   loading: boolean = false;
 
   @Styles
@@ -98,7 +98,7 @@ struct ResetPasswordPage {
         });
         await preference.setToken(res.token);
         httpRequest.setToken(res.token);
-        AppStorage.SetOrCreate<UserDataInterface>(USER_DATA, res.data)
+        AppStorage.SetOrCreate<UserDataType>(USER_DATA, res.data)
         router.replaceUrl({
           url: 'pages/ChatPage', // 目标url
         });

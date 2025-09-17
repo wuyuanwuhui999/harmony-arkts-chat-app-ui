@@ -1,4 +1,4 @@
-import { LikeInterface, UserDataInterface } from '../interface/Index';
+import { LikeType, UserDataType } from '../type/Index';
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import LikeController from '../controller/LikeController';
@@ -10,8 +10,8 @@ import { deleteLikeService, saveLikeService } from '../service/Index';
 export default struct LikeComponent {
   @Prop likeList: string;
   @Prop relationId: number;
-  @StorageLink(USER_DATA) userData: UserDataInterface = {} as UserDataInterface;
-  @State mLikeList: Array<LikeInterface> = []
+  @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
+  @State mLikeList: Array<LikeType> = []
   public controller: LikeController | null = null;
   private loading: boolean = false;
 
@@ -19,7 +19,7 @@ export default struct LikeComponent {
     if (this.controller) {
       this.controller.attach(this); //绑定控制器
     }
-    this.mLikeList = JSON.parse(this.likeList) as Array<LikeInterface>;
+    this.mLikeList = JSON.parse(this.likeList) as Array<LikeType>;
   }
 
   /**
@@ -28,7 +28,7 @@ export default struct LikeComponent {
    * @author wuwenqiang
    */
   getLikeIndex(): number {
-    return this.mLikeList.findIndex((item: LikeInterface) => item.userId === this.userData.userAccount);
+    return this.mLikeList.findIndex((item: LikeType) => item.userId === this.userData.userAccount);
   }
 
   useLike(): void {
@@ -48,7 +48,7 @@ export default struct LikeComponent {
         id: -1,
         relationId: this.relationId,
         type: SocialEnum.MUSIC,
-      } as LikeInterface;
+      } as LikeType;
       saveLikeService(likeItem).then((res) => {
         this.mLikeList.push(res.data);
       }).finally(() => {
@@ -64,7 +64,7 @@ export default struct LikeComponent {
         .width(size.smallIconSize)
         .height(size.smallIconSize)
         .margin({ top: size.smallPadding, right: size.smallPadding })
-      ForEach(this.mLikeList, (cItem: LikeInterface, index: number) => {
+      ForEach(this.mLikeList, (cItem: LikeType, index: number) => {
         Text(`${cItem.username}${index === this.mLikeList.length - 1 ? '' : '、'}`)
           .margin({ left: size.smallPadding })
           .fontColor(colors.blueColor)

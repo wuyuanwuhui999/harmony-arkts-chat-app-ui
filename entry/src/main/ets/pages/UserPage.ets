@@ -1,5 +1,5 @@
 import router from '@ohos.router';
-import { UserDataInterface } from "../interface/Index";
+import { UserDataType } from "../type/Index";
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import { HOST } from '../common/constant';
@@ -13,7 +13,7 @@ import DialogComponent from '../components/DialogComponent';
 @Entry
 @Component
 struct UserPage {
-  @StorageLink(USER_DATA) userData: UserDataInterface = {} as UserDataInterface;
+  @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
   title: string = '';
   @State field: string = '';
 
@@ -100,7 +100,7 @@ struct UserPage {
    * @author wuwenqiang
    */
   onConfirm(value: string) {
-    const userData: UserDataInterface = JSON.parse(JSON.stringify(this.userData))
+    const userData: UserDataType = JSON.parse(JSON.stringify(this.userData))
     userData[this.field] = value
     updateUserDataService(userData).then(() => {
       this.userData[this.field] = value;

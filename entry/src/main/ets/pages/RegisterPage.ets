@@ -1,7 +1,7 @@
 import router from '@ohos.router';
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
-import { MyAwesomeData, UserDataInterface } from '../interface/Index';
+import { MyAwesomeData, UserDataType } from '../type/Index';
 import promptAction from '@ohos.promptAction'
 import { registerService, verifyUserService } from '../service/Index';
 import httpRequest from '../utils/HttpUtil';
@@ -15,7 +15,7 @@ import NavigatorTitleComponent from '../components/NavigatorTitleComponent';
 @Entry
 @Component
 struct RegisterPage {
-  @State userData: UserDataInterface = {
+  @State userData: UserDataType = {
     id: '',
     userAccount: '',
     username: '',
@@ -113,7 +113,7 @@ struct RegisterPage {
         preference.setPassword(this.userData.userAccount, this.userData.password)
         preference.setToken(res.token);
         httpRequest.setToken(res.token);
-        AppStorage.SetOrCreate<UserDataInterface>(USER_DATA, res.data)
+        AppStorage.SetOrCreate<UserDataType>(USER_DATA, res.data)
         router.replaceUrl({
           url: 'pages/ChatPage', // 目标url
         }, router.RouterMode.Single, (err) => {
@@ -350,7 +350,7 @@ struct RegisterPage {
       customStyle: true,
       builder: OptionDialogComponent({
         cancel: (): void => this.onCancel(),
-        confirm: (value): void => this.onConfirm(value),
+        confirm: (value,index): void => this.onConfirm(index),
         options: ['男', '女'],
       }),
       alignment: DialogAlignment.Bottom,
@@ -367,8 +367,8 @@ struct RegisterPage {
    * @date: 2024-01-10 23:01
    * @author wuwenqiang
    */
-  onConfirm(value: string) {
-    this.userData.sex = value;
+  onConfirm(index: number) {
+    this.userData.sex = index.toString();
     this.dialogController?.close();
   }
 }

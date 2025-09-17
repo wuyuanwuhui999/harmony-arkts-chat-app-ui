@@ -101,38 +101,14 @@ class PreferenceModel {
     await this.putPreference(userAccount, password);
   }
 
-  // 获取电影搜索关键词
-  async getMovieSearchKeyWord(): Promise<Array<string>> {
-    const movieSearchKeyWord = await this.getPreference('movieSearchKeyWord');
-    if (movieSearchKeyWord) {
-      try {
-        return JSON.parse(movieSearchKeyWord) as Array<string>;
-      } catch (e) {
-        console.error('Failed to parse movie search keywords:', e);
-        return [];
-      }
-    } else {
-      return [];
-    }
+  // 写入密码
+  async getTenantId(userId:string,) {
+    await this.getPreference(`${userId}:tenantId`);
   }
 
-  // 设置电影搜索关键词
-  async setMovieSearchKeyWord(keyWord: string): Promise<void> {
-    const movieSearchKeyWord: Array<string> = await this.getMovieSearchKeyWord();
-    const index = movieSearchKeyWord.findIndex(item => item === keyWord);
-
-    if (index !== -1) {
-      movieSearchKeyWord.splice(index, 1);
-    }
-
-    movieSearchKeyWord.unshift(keyWord);
-
-    // 最多只存十条记录
-    if (movieSearchKeyWord.length > 10) {
-      movieSearchKeyWord.splice(10);
-    }
-
-    await this.putPreference('movieSearchKeyWord', JSON.stringify(movieSearchKeyWord));
+  // 写入密码
+  async setTenantId(userId:string,tenantId:string,) {
+    await this.putPreference(`${userId}:tenantId`,tenantId);
   }
 }
 

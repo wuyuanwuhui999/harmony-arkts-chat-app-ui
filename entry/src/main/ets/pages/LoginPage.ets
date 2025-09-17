@@ -2,7 +2,7 @@ import router from '@ohos.router';
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import { loginByEmailService, loginService, sendEmailVertifyCodeService } from '../service/Index';
-import { UserDataInterface } from '../interface/Index';
+import { UserDataType } from '../type/Index';
 import { USER_DATA } from '../common/constant';
 import promptAction from '@ohos.promptAction'
 import display from '@ohos.display';
@@ -15,7 +15,7 @@ import LoadingController from '../controller/LoadingController';
 @Entry
 @Component
 struct LoginPage {
-  @StorageLink(USER_DATA) userData: UserDataInterface | null = null;
+  @StorageLink(USER_DATA) userData: UserDataType | null = null;
   userAccount: string = '';
   password: string = '';
   loading: boolean = false;
@@ -26,7 +26,7 @@ struct LoginPage {
 
   async aboutToAppear() {
     this.userAccount = this.userData?.userAccount || "吴时吴刻";
-    this.password = await preference.getPassword(this.userData?.userAccount!) as string || "123456";
+    this.password = await preference.getPassword(this.userData?.userAccount!) as string || "12345678";
   }
 
   @Styles
@@ -80,11 +80,12 @@ struct LoginPage {
         })
         await preference.setToken(res.token);
         httpRequest.setToken(res.token);
-        AppStorage.SetOrCreate<UserDataInterface>(USER_DATA, res.data)
+        AppStorage.SetOrCreate<UserDataType>(USER_DATA, res.data)
         router.replaceUrl({
           url: 'pages/ChatPage', // 目标url
         });
       }).catch((e: Error) => {
+        console.log("错误",e)
         promptAction.showToast({
           message: "账号或密码错误，请重登录",
           duration: 2000,
@@ -115,7 +116,7 @@ struct LoginPage {
         })
         await preference.setToken(res.token);
         httpRequest.setToken(res.token);
-        AppStorage.SetOrCreate<UserDataInterface>(USER_DATA, res.data)
+        AppStorage.SetOrCreate<UserDataType>(USER_DATA, res.data)
         router.replaceUrl({
           url: 'pages/ChatPage', // 目标url
         });

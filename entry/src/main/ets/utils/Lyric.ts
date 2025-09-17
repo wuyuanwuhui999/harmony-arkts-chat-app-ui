@@ -5,7 +5,7 @@ enum STATUS {
   STATE_PLAYING = 1
 }
 
-interface TagRegInterface {
+interface TagRegType {
   title?:string,
   artist?:string,
   album?:string,
@@ -13,13 +13,13 @@ interface TagRegInterface {
   by?:string,
 }
 
-export interface LineInterface {
+export interface LineType {
   time?:number,
   txt:string,
   lineNum?:number
 }
 
-const tagRegMap:TagRegInterface = {
+const tagRegMap:TagRegType = {
   title: 'ti',
   artist: 'ar',
   album: 'al',
@@ -29,17 +29,17 @@ const tagRegMap:TagRegInterface = {
 
 export default class Lyric {
   private lrc:string = '';
-  private tags:TagRegInterface = {};
-  public lines:Array<LineInterface> = []
+  private tags:TagRegType = {};
+  public lines:Array<LineType> = []
   private state:STATUS = STATUS.STATE_PAUSE;
   private curLine:number = 0;
   private curNum:number = 0;
   private startStamp:number = 0;
   private timer:number = 0;
   private pauseStamp:number;
-  private handler:(data:LineInterface) => void
+  private handler:(data:LineType) => void
 
-  constructor(lrc:string, handlder:(data:LineInterface) => void) {
+  constructor(lrc:string, handlder:(data:LineType) => void) {
     this.lrc = lrc;
     this.handler = handlder;
     this._init();

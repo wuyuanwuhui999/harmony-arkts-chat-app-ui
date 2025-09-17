@@ -11,7 +11,7 @@ export default struct OptionDialogComponent {
   controller: CustomDialogController
   cancel: () => void = () => {
   };
-  confirm: (value: string) => void = () => {
+  confirm: (value: string,index:number) => void = () => {
   };
   options: Array<string> = []
 
@@ -26,7 +26,7 @@ export default struct OptionDialogComponent {
             .backgroundColor(colors.blockColor)
             .borderRadius(size.blockBorderRaduis)
             .onClick(() => {
-              this.confirm(item)
+              this.confirm(item,index)
             })
           if (index !== this.options.length - 1) {
             Divider()

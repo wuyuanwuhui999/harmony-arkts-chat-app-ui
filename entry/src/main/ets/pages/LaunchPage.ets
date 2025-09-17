@@ -1,6 +1,6 @@
 import httpRequest from '../utils/HttpUtil';
 import deviceInfo from '@ohos.deviceInfo'; //设备信息
-import { DeviceInterface, UserDataInterface } from '../interface/Index'
+import { DeviceType, UserDataType } from '../type/Index'
 import preference from '../utils/PreferenceModel';
 import { DEVICE_INFO, USER_DATA } from '../common/constant';
 import { getUserDataService } from '../service/Index';
@@ -25,7 +25,7 @@ struct LaunchPage {
   }
 
   async aboutToAppear() {
-    AppStorage.SetOrCreate<DeviceInterface>(DEVICE_INFO, {
+    AppStorage.SetOrCreate<DeviceType>(DEVICE_INFO, {
       device: deviceInfo.productModel,
       platform: deviceInfo.marketName,
       version: deviceInfo.sdkApiVersion.toString(),
@@ -37,7 +37,7 @@ struct LaunchPage {
         getUserDataService(token).then((res) => {
           preference.setToken(res.token);
           httpRequest.setToken(res.token);
-          AppStorage.SetOrCreate<UserDataInterface>(USER_DATA, res.data)
+          AppStorage.SetOrCreate<UserDataType>(USER_DATA, res.data)
           router.replaceUrl({
             url: 'pages/ChatPage'
           });

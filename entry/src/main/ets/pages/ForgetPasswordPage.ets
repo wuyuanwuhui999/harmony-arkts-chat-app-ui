@@ -1,7 +1,7 @@
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import { sendEmailVertifyCodeService } from '../service/Index';
-import { UserDataInterface } from '../interface/Index';
+import { UserDataType } from '../type/Index';
 import { USER_DATA } from '../common/constant';
 import promptAction from '@ohos.promptAction'
 import display from '@ohos.display';
@@ -14,7 +14,7 @@ import GlobalLoading from '../components/GlobalLoading';
 @Entry
 @Component
 struct LoginPage {
-  @StorageLink(USER_DATA) userData: UserDataInterface = {} as UserDataInterface;
+  @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
   email: string = '';
   loading: boolean = false;
   private loadingController: LoadingController = new LoadingController()

@@ -1,7 +1,7 @@
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import { updatePasswordService } from '../service/Index';
-import { UserDataInterface } from '../interface/Index';
+import { UserDataType } from '../type/Index';
 import { USER_DATA } from '../common/constant';
 import promptAction from '@ohos.promptAction'
 import display from '@ohos.display';

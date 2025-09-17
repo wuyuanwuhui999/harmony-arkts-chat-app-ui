@@ -2,14 +2,14 @@ import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import { getTopCommentListService, insertCommentService } from '../service/Index';
 import { HOST } from '../common/constant';
-import { CommentInterface } from '../interface/Index';
+import { CommentType } from '../type/Index';
 import { formatTime } from '../utils/common';
 import BottomDialogComponent from './BottomDialogComponent';
 import CommentController from '../controller/CommentController';
 
 // 传入buildCommentList方法必须是一个对象形式，否则无法实现响应式
-interface CommentParamsInterface {
-  commentList: Array<CommentInterface>
+interface CommentParamsType {
+  commentList: Array<CommentType>
 }
 
 @Component
@@ -18,10 +18,10 @@ export default struct CommentComponent {
   @Prop commentListStr: string; // 评论数组字符串
   @Prop type: string;
   @State commentTotal: number = 0;
-  @State commentList: Array<CommentInterface> = [];
+  @State commentList: Array<CommentType> = [];
   @State text: string = ''; // 评论框文字
-  @State firstComment: CommentInterface | null = null;
-  @State replyComment: CommentInterface | null = null;
+  @State firstComment: CommentType | null = null;
+  @State replyComment: CommentType | null = null;
   @State replyIndex: number = -1;
   @State focusableInput: boolean = false;
   private loading: boolean = false;
@@ -39,7 +39,7 @@ export default struct CommentComponent {
      * @date: 2024-05-25 21:36
      */
     if (this.commentListStr) {
-      this.commentList = JSON.parse(this.commentListStr) as Array<CommentInterface>;
+      this.commentList = JSON.parse(this.commentListStr) as Array<CommentType>;
     } else {
       getTopCommentListService(this.relationId, this.type, 1, 20).then(res => {
         this.commentList = res.data;
@@ -102,7 +102,7 @@ export default struct CommentComponent {
               return;
             }
             this.loading = true;
-            const commentItem: CommentInterface = {
+            const commentItem: CommentType = {
               id: 0, //主键
               content: this.text, //评论内容
               parentId: this.replyComment?.id ?? -1, //父节点id
@@ -125,7 +125,7 @@ export default struct CommentComponent {
             insertCommentService(commentItem).then((res) => {
               if (this.firstComment) { // 二级评论，相当于回复
                 // 必须重新解构，然后再赋值，否则添加回复不生效
-                const commentItem: CommentInterface = JSON.parse(JSON.stringify(this.commentList[this.replyIndex]));
+                const commentItem: CommentType = JSON.parse(JSON.stringify(this.commentList[this.replyIndex]));
                 commentItem.replyList === null && (commentItem.replyList = []);
                 commentItem.replyList.push(res.data); // 添加回复列表
                 this.commentList.splice(this.replyIndex, 1, commentItem); // 替换掉原数据里面的那一条数据
@@ -151,7 +151,7 @@ export default struct CommentComponent {
    * @description: 点击弹出评论框
    * @date: 2024-05-26 14:26
    */
-  useReply(item: CommentInterface, index: number) {
+  useReply(item: CommentType, index: number) {
     if (this.commentListStr) {
       this.openInputDialog();
     }
@@ -159,7 +159,7 @@ export default struct CommentComponent {
     this.replyIndex = index;
     if (item.topId) {
       this.replyComment = item; // 二级评论，即回复的内容
-      this.firstComment = this.commentList.find(aItem => aItem.id === item.topId) as CommentInterface
+      this.firstComment = this.commentList.find(aItem => aItem.id === item.topId) as CommentType
     } else {
       this.replyComment = this.firstComment = item; // 点击的是一级评论
     }
@@ -171,9 +171,9 @@ export default struct CommentComponent {
    * @date: 2024-05-25 16:30
    */
   @Builder
-  buildCommentList(commentParams: CommentParamsInterface) {
+  buildCommentList(commentParams: CommentParamsType) {
     Column({ space: size.pagePadding }) {
-      ForEach(commentParams.commentList, (aItem: CommentInterface, aIndex: number) => {
+      ForEach(commentParams.commentList, (aItem: CommentType, aIndex: number) => {
         Row() {
           Image(aItem.avater ? HOST + aItem.avater : $r('app.media.default_avater'))
             .width(aItem.topId ? size.smallAvaterSize : size.middleAvaterSize)

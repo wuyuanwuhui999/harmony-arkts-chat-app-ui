@@ -1,6 +1,6 @@
 import http from '@ohos.net.http';
 import { HOST } from '../common/constant';
-import { MyAwesomeData } from '../interface/Index'
+import { MyAwesomeData } from '../type/Index'
 import promptAction from '@ohos.promptAction';
 import display from '@ohos.display';
 

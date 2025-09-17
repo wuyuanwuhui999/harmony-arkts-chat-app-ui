@@ -2,18 +2,20 @@ import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import router from '@ohos.router';
 import {
-  ChatModelInterface,
-  ChatInterface,
-  GroupedByChatIdInterface,
-  GroupedByTimeAgoInterface,
-  ChatHistoryInterface,
-  ChatParamsInterface,
-  DocumentInterface
-} from '../interface/Index';
-import { getModelListService, getChatHistoryService,getMyDocumentService,deleteMyDocumentService } from '../service/Index';
+  ChatModelType,
+  ChatType,
+  GroupedByChatIdType,
+  GroupedByTimeAgoType,
+  ChatHistoryType,
+  ChatParamsType,
+  DocumentType,
+  UserDataType,
+  TenantUserType
+} from '../type/Index';
+import { getModelListService, getChatHistoryService,getMyDocumentService,deleteMyDocumentService, getTenantUserService} from '../service/Index';
 import { PositionEnum } from '../common/enum';
 import AvaterComponent from "../components/AvaterComponent";
-import { HOST, PAGE_SIZE } from '../common/constant';
+import { HOST, PAGE_SIZE, USER_DATA, DEFAULT_TENANT_USER,TENANT_USER_DATA} from '../common/constant';
 import { formatTimeAgo, generateSecureID, formatTime} from "../utils/common";
 import { display, promptAction } from '@kit.ArkUI';
 import webSocket from '@ohos.net.webSocket';
@@ -26,7 +28,7 @@ import DialogComponent from "../components/DialogComponent";
 @Entry
 @Component
 export default struct ChatPage {
-  @State modelList: Array<ChatModelInterface> = []
+  @State modelList: Array<ChatModelType> = []
   @State activeModelName: string = "";
   @State prompt: string = "请你自我介绍一下"; // 提示词
   @State chatId: string = "";
@@ -34,14 +36,13 @@ export default struct ChatPage {
   @State showMenu: boolean = false;
   @State pageNum: number = 1;
   @State total: number = 0;
-  @State chatHistoryGroup: GroupedByTimeAgoInterface = {};
+  @State chatHistoryGroup: GroupedByTimeAgoType = {};
   @State token: string = "";
   @State showHistory:boolean = false;
   private scroller: Scroller = new Scroller()
-  private myDocList:DocumentInterface[] = [];
-  @State chatList: Array<ChatInterface> = [
+  private myDocList:DocumentType[] = [];
+  @State chatList: Array<ChatType> = [
     {
-      type: "tip",
       responseContent: "你好，我是智能音乐助手小吴同学，请问有什么可以帮助您？",
       position: PositionEnum.LEFT,
     }
@@ -52,6 +53,8 @@ export default struct ChatPage {
   @State showThink:boolean = false;
   @State type:string = "";
   @State language:string = "zh";
+  @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
+  @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
   private message: string = "";
   private dialogController: CustomDialogController | null = null
   private ws: webSocket.WebSocket | null = null;
@@ -63,15 +66,16 @@ export default struct ChatPage {
     })
   }
 
-  aboutToDisappear() {
+  async aboutToDisappear() {
+    await this.getStorageTenant();
     this.ws?.close();
   }
 
   useChatHistory() {
-    const chatHistoryGroup: GroupedByTimeAgoInterface = JSON.parse(JSON.stringify(this.chatHistoryGroup))
+    const chatHistoryGroup: GroupedByTimeAgoType = JSON.parse(JSON.stringify(this.chatHistoryGroup))
     getChatHistoryService(this.pageNum, PAGE_SIZE).then((res) => {
       this.total = res.total
-      const result: GroupedByChatIdInterface = {}
+      const result: GroupedByChatIdType = {}
       res.data.forEach((aItem) => {
         aItem.timeAgo = formatTimeAgo(aItem.createTime);
         if (!result[aItem.chatId]) {
@@ -107,7 +111,7 @@ export default struct ChatPage {
         this.token = await preference.getToken() as string;
       }
       this.chatId = this.chatId || generateSecureID();
-      const payload: ChatParamsInterface = {
+      const payload: ChatParamsType = {
         modelName: this.activeModelName,
         token: this.token, // 替换为实际用户ID
         chatId: this.chatId, // 替换为实际聊天ID
@@ -171,6 +175,25 @@ export default struct ChatPage {
     });
   }
 
+  /**
+   * @author: wuwenqiang
+   * @description: 获取租户i
+   * @date: 2025-8-10 18:06
+   */
+  getStorageTenant = ():Promise<void>=>{
+    return preference.getTenantId(this.userData.id!).then(async (res)=>{
+      await getTenantUserService(res??"").then((respone)=>{
+        if(respone.data){
+          AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,respone.data as TenantUserType);
+        }else{
+          AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,DEFAULT_TENANT_USER);
+        }
+      })
+    }).catch(()=>{
+      AppStorage.TenantUserType<TenantUserType>(TENANT_USER_DATA,DEFAULT_TENANT_USER);
+    });
+  }
+
   // popup构造器定义弹框内容
   @Builder
   popupBuilder() {
@@ -180,7 +203,7 @@ export default struct ChatPage {
       Text("我的文档").height(size.popupMenuHeight).onClick(()=>{
         this.showMyDoc = true;
         this.showMenu = false;
-        getMyDocumentService().then((res)=>{
+        getMyDocumentService(this.tenantUser.tenantId).then((res)=>{
           this.myDocList = res.data
         });
       })
@@ -228,7 +251,7 @@ export default struct ChatPage {
    * @date: 2025-04-13 12:07
    */
   @Builder
-  DeleteButton(docItem:DocumentInterface) {
+  DeleteButton(docItem:DocumentType) {
     Column() {
       Text('删除')
         .fontColor(Color.White)
@@ -279,7 +302,7 @@ export default struct ChatPage {
               ForEach(Object.keys(this.chatHistoryGroup), (key: string) => {
                 Column({ space: size.miniPadding }) {
                   Text(key).fontColor(colors.disableTextColor)
-                  ForEach(this.chatHistoryGroup[key], (items: ChatHistoryInterface[]) => {
+                  ForEach(this.chatHistoryGroup[key], (items: ChatHistoryType[]) => {
                     Text(items[0].prompt)
                       .maxLines(1)// 限制最大行数为1
                       .textOverflow({ overflow: TextOverflow.Ellipsis })// 溢出时显示省略号
@@ -332,7 +355,7 @@ export default struct ChatPage {
         Row() {
           Scroll() {
             List() {
-              ForEach(this.myDocList, (item: DocumentInterface, index: number) => {
+              ForEach(this.myDocList, (item: DocumentType, index: number) => {
                 ListItem() {
                   Column({ space: size.miniPadding }) {
                     Text(formatTime(item.createTime)).fontColor(colors.disableTextColor)
@@ -397,7 +420,7 @@ export default struct ChatPage {
 
         Scroll(this.scroller) {
           Column({ space: size.pagePadding }) {
-            ForEach(this.chatList, (item: ChatInterface, index: number) => {
+            ForEach(this.chatList, (item: ChatType, index: number) => {
               if (item.position == PositionEnum.LEFT) {
                 if (item.thinkContent || item.responseContent) {
                   Row() {

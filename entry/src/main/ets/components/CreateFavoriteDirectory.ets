@@ -1,6 +1,6 @@
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
-import { FavoriteDirectoryInterface } from '../interface/Index';
+import { FavoriteDirectoryType } from '../type/Index';
 import { insertFavoriteDirectoryService } from '../service/Index';
 import promptAction from '@ohos.promptAction';
 import display from '@ohos.display';
@@ -8,9 +8,9 @@ import display from '@ohos.display';
 @Component
 export default struct CreateFavoriteDirectory {
   @State checkboxValue: Array<number> = [];
-  @State favoriteDirectoryList: Array<FavoriteDirectoryInterface> = [];
+  @State favoriteDirectoryList: Array<FavoriteDirectoryType> = [];
   @State favoriteName: string = '';
-  public onCreateDirectory: (favoriteDirectory: FavoriteDirectoryInterface) => void = () => {
+  public onCreateDirectory: (favoriteDirectory: FavoriteDirectoryType) => void = () => {
   };
   public onCancleCreateDirectory: () => void = () => {
   };
@@ -58,7 +58,7 @@ export default struct CreateFavoriteDirectory {
         .fontColor(Color.White)
         .borderRadius(size.blockBorderRaduis * 2)
         .onClick(() => {
-          const favoriteDirectory: FavoriteDirectoryInterface = {
+          const favoriteDirectory: FavoriteDirectoryType = {
             name: this.favoriteName,
           }
           insertFavoriteDirectoryService(favoriteDirectory).then(res => {
