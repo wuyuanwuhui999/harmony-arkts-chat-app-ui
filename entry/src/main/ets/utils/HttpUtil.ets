@@ -54,7 +54,7 @@ class HttpRequest {
       readTimeout: 10000,
       header: {
         "content-type": "application/json",
-        "Authorization": this.token
+        "Authorization": `Bearer ${this.token}`
       }
     }
     // 手动合并对象

@@ -1,14 +1,10 @@
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import { updatePasswordService } from '../service/Index';
-import { UserDataType } from '../type/Index';
-import { USER_DATA } from '../common/constant';
 import promptAction from '@ohos.promptAction'
 import display from '@ohos.display';
 import NavigatorTitleComponent from '../components/NavigatorTitleComponent';
 import router from '@ohos.router';
-import preference from '../utils/PreferenceModel';
-import httpRequest from '../utils/HttpUtil';
 
 @Entry
 @Component

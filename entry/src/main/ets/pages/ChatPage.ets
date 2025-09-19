@@ -10,9 +10,11 @@ import {
   ChatParamsType,
   DocumentType,
   UserDataType,
-  TenantUserType
+  TenantUserType,
+  DirectoryType
 } from '../type/Index';
-import { getModelListService, getChatHistoryService,getMyDocumentService,deleteMyDocumentService, getTenantUserService} from '../service/Index';
+import { getModelListService, getChatHistoryService,getMyDocumentService,deleteMyDocumentService, getTenantUserService,
+  getDirectoryListService} from '../service/Index';
 import { PositionEnum } from '../common/enum';
 import AvaterComponent from "../components/AvaterComponent";
 import { HOST, PAGE_SIZE, USER_DATA, DEFAULT_TENANT_USER,TENANT_USER_DATA} from '../common/constant';
@@ -24,6 +26,7 @@ import api from '../api';
 import preference from '../utils/PreferenceModel';
 import OptionDialogComponent from '../components/OptionDialogComponent';
 import DialogComponent from "../components/DialogComponent";
+import BottomDialogComponent from "../components/BottomDialogComponent";
 
 @Entry
 @Component
@@ -55,19 +58,20 @@ export default struct ChatPage {
   @State language:string = "zh";
   @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
   @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
+  @State directoryList:Array<DirectoryType> = [];
   private message: string = "";
   private dialogController: CustomDialogController | null = null
   private ws: webSocket.WebSocket | null = null;
 
-  aboutToAppear() {
+  async aboutToAppear() {
+    await this.getStorageTenant();
     getModelListService().then((res) => {
       this.modelList = res.data;
       this.activeModelName = res.data[0].modelName;
     })
   }
 
-  async aboutToDisappear() {
-    await this.getStorageTenant();
+  aboutToDisappear() {
     this.ws?.close();
   }
 
@@ -182,23 +186,102 @@ export default struct ChatPage {
    */
   getStorageTenant = ():Promise<void>=>{
     return preference.getTenantId(this.userData.id!).then(async (res)=>{
-      await getTenantUserService(res??"").then((respone)=>{
-        if(respone.data){
-          AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,respone.data as TenantUserType);
-        }else{
-          AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,DEFAULT_TENANT_USER);
-        }
-      })
+      if(res !== undefined && res !== null && res !== ""){
+        await getTenantUserService(res).then((respone)=>{
+          if(respone.data){
+            AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,respone.data as TenantUserType);
+          }else{
+            AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,this.getDefaultTenantUser());
+          }
+        })
+      }else{
+        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,this.getDefaultTenantUser());
+      }
     }).catch(()=>{
-      AppStorage.TenantUserType<TenantUserType>(TENANT_USER_DATA,DEFAULT_TENANT_USER);
+      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,this.getDefaultTenantUser());
     });
+  }
+
+  getDefaultTenantUser():TenantUserType{
+    const defaultTenantUser:TenantUserType = JSON.parse(JSON.stringify(DEFAULT_TENANT_USER));
+    defaultTenantUser.userId = defaultTenantUser.tenantId = this.userData.id!;
+    defaultTenantUser.username = this.userData.username;
+    return defaultTenantUser
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 打开文件目录对话框
+   * @date: 2025-9-17 10:19
+   */
+  onShowDirectoryDialog = () => {
+    getDirectoryListService(this.tenantUser.tenantId || this.tenantUser.id).then((res)=>{
+      this.directoryList.splice(1,this.directoryList.length);
+      this.directoryList.push(...res.data);
+      this.dialogController = new CustomDialogController({
+        customStyle: true,
+        builder: BottomDialogComponent({
+          dialogHeight: '80%',
+          builder: this.directoryListBuilder.bind(this)
+        }),
+        alignment: DialogAlignment.Bottom,
+      })
+      this.dialogController.open()
+    })
+
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 收藏夹
+   * @date: 2024-07-01 21:45
+   */
+  @Builder
+  directoryListBuilder() {
+    Column() {
+      Row() {
+        Image($r("app.media.icon_add"))
+          .width(size.normalFontSize)
+          .height(size.normalFontSize)
+          .opacity(0.5)
+          .onClick(() => {
+
+          })
+          .margin({ left: size.pagePadding })
+        Text('选择文件夹')
+          .padding(size.pagePadding)
+          .textAlign(TextAlign.Center)
+          .layoutWeight(1)
+        Image($r("app.media.icon_close"))
+          .width(size.normalFontSize)
+          .height(size.normalFontSize)
+          .opacity(0.5)
+          .onClick(() => {
+            this.dialogController?.close()
+          })
+          .margin({ right: size.pagePadding })
+      }
+      .justifyContent(FlexAlign.Center)
+      .border({
+        width: { bottom: 1 },
+        color: { bottom: colors.borderColor },
+        style: { bottom: BorderStyle.Solid }
+      })
+    }
+    Column(){
+
+    }.backgroundColor(colors.pageBackgroundColor).padding({
+      left: size.pagePadding,
+      right: size.pagePadding,
+      top: size.pagePadding
+    }).flexGrow(1)
   }
 
   // popup构造器定义弹框内容
   @Builder
   popupBuilder() {
     Column() {
-      Text("上传文档").height(size.popupMenuHeight)
+      Text("上传文档").height(size.popupMenuHeight).onClick(this.onShowDirectoryDialog)
       Divider().height(1).color(colors.borderColor)
       Text("我的文档").height(size.popupMenuHeight).onClick(()=>{
         this.showMyDoc = true;
@@ -393,13 +476,11 @@ export default struct ChatPage {
       }
       Column() {
         Row() {
-          Image($r('app.media.icon_back'))
-            .width(size.smallIconSize)
-            .height(size.smallIconSize)
-            .opacity(size.opacity)
-            .onClick(() => {
-              router.back()
-            })
+          AvaterComponent({dimensions:size.middleAvaterSize,avater:this.userData.avater}).onClick(()=>{
+            router.pushUrl({
+              url: 'pages/UserPage'
+            });
+          })
           Text("当前接入模型：" + this.activeModelName).layoutWeight(1).textAlign(TextAlign.Center)
           Image($r('app.media.icon_menu'))
             .width(size.smallIconSize)
@@ -473,7 +554,7 @@ export default struct ChatPage {
                       .position({ right: -size.smallIconSize / 1.5, top: size.smallIconSize / 2 })
                   }.layoutWeight(1).justifyContent(FlexAlign.End)
 
-                  AvaterComponent({ dimensions: size.middlIconSize }).margin({ left: size.smallIconSize })
+                  AvaterComponent({ dimensions: size.middlIconSize,avater:this.userData.avater }).margin({ left: size.smallIconSize })
                 }
                 .width("100%")
               }

@@ -1,21 +1,30 @@
 import router from '@ohos.router';
-import { UserDataType } from "../type/Index";
+import { TenantUserType, UserDataType, TenantType, TenantStatus} from "../type/Index";
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
-import { HOST } from '../common/constant';
-import { USER_DATA } from '../common/constant';
-import { updateUserDataService } from '../service/Index';
+import { USER_DATA,TENANT_USER_DATA,DEFAULT_TENANT_USER, HOST} from '../common/constant';
+import { getTenantListService, getTenantUserService, updateUserDataService } from '../service/Index';
 import preference from '../utils/PreferenceModel';
 import OptionDialogComponent from '../components/OptionDialogComponent';
 import NavigatorTitleComponent from '../components/NavigatorTitleComponent';
 import DialogComponent from '../components/DialogComponent';
+import { SexValueMap } from '../common/config';
 
 @Entry
 @Component
 struct UserPage {
   @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
+  @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
   title: string = '';
   @State field: string = '';
+  @State tenantList: Array<TenantType> = [{
+    id: "",// 租户ID（主键）
+    name: "私人空间",// 租户名称
+    code: "personal",// 租户编码（唯一）
+    status: TenantStatus.DISABLED,// 租户状态
+    created_by: ""// 创建人ID
+  }];
+  dialogController: CustomDialogController | null = null
 
   @Styles
   blockStyle(){
@@ -48,6 +57,12 @@ struct UserPage {
     })
     .width('100%')
     .padding({ top: size.pagePadding, bottom: size.pagePadding })
+  }
+
+  aboutToAppear() {
+    getTenantListService().then((res)=>{
+      this.tenantList.push(...res.data)
+    })
   }
 
   useShowDialog(title: string, field: string) {
@@ -88,8 +103,6 @@ struct UserPage {
     this.dialogController.open()
   }
 
-  dialogController: CustomDialogController | null = null
-
   onCancel() {
     this.dialogController?.close()
   }
@@ -120,6 +133,30 @@ struct UserPage {
     router.clear(); // 清除历史页面
   }
 
+  /**
+   * @description: 修改用户信息
+   * @date: 2025-09-18 16:53
+   * @author wuwenqiang
+   */
+  getTenantUser = (tenantId:string)=>{
+    if(tenantId === ""){
+      AppStorage.SetOrCreate(TENANT_USER_DATA,this.getDefaultTenantUser());
+      this.dialogController?.close();
+    }else {
+      getTenantUserService(tenantId).then((res)=>{
+        AppStorage.SetOrCreate(TENANT_USER_DATA,res.data);
+        this.dialogController?.close();
+      })
+    }
+  }
+
+  getDefaultTenantUser():TenantUserType{
+    const defaultTenantUser:TenantUserType = JSON.parse(JSON.stringify(DEFAULT_TENANT_USER));
+    defaultTenantUser.userId = defaultTenantUser.tenantId = this.userData.id!;
+    defaultTenantUser.username = this.userData.username;
+    return defaultTenantUser
+  }
+
   build() {
     Column() {
       NavigatorTitleComponent({ title: "用户信息" })
@@ -145,7 +182,7 @@ struct UserPage {
 
             Row() {
               Text('性别').flexGrow(1)
-              Text(this.userData.sex)
+              Text(SexValueMap[this.userData.sex])
               Image($r('app.media.icon_arrow')).arrowStyle()
             }.rowStyle().justifyContent(FlexAlign.Center).onClick(() => {
               this.useShowDialog('性别', 'sex')
@@ -200,6 +237,76 @@ struct UserPage {
 
           }.blockStyle().padding({ top: 0, left: size.pagePadding, right: size.pagePadding })
 
+          Text('修改密码')
+            .padding(size.smallPadding)
+            .border({
+              width: 1,
+              color: colors.borderColor,
+              style: BorderStyle.Solid
+            })
+            .backgroundColor(colors.blockColor)
+            .borderRadius(size.blockBorderRaduis * 2)
+            .width('100%')
+            .padding(size.pagePadding)
+            .textAlign(TextAlign.Center)
+            .margin({ top: size.pagePadding})
+            .onClick(() => {
+              router.pushUrl({
+                url: 'pages/UpdatePasswordPage', // 目标url
+              });
+            })
+
+          if(this.tenantList.length > 0){
+            Text('切换租户')
+              .padding(size.smallPadding)
+              .border({
+                width: 1,
+                color: colors.borderColor,
+                style: BorderStyle.Solid
+              })
+              .backgroundColor(colors.blockColor)
+              .borderRadius(size.blockBorderRaduis * 2)
+              .width('100%')
+              .padding(size.pagePadding)
+              .textAlign(TextAlign.Center)
+              .margin({ top: size.pagePadding })
+              .onClick(() => {
+                this.dialogController = new CustomDialogController({
+                  customStyle: true,
+                  builder: OptionDialogComponent({
+                    cancel: (): void => this.onCancel(),
+                    confirm: (value,index): void => this.getTenantUser(this.tenantList[index].id),
+                    options: this.tenantList.map((item)=>{
+                      return item.name
+                    }),
+                  }),
+                  alignment: DialogAlignment.Bottom,
+                })
+                this.dialogController.open()
+              })
+          }
+
+          if(this.tenantUser.roleType > 1){
+            Text('租户管理')
+              .padding(size.smallPadding)
+              .border({
+                width: 1,
+                color: colors.borderColor,
+                style: BorderStyle.Solid
+              })
+              .backgroundColor(colors.blockColor)
+              .borderRadius(size.blockBorderRaduis * 2)
+              .width('100%')
+              .padding(size.pagePadding)
+              .textAlign(TextAlign.Center)
+              .margin({ top: size.pagePadding})
+              .onClick(() => {
+                router.pushUrl({
+                  url: 'pages/TenantManagerPage', // 目标url
+                });
+              })
+          }
+
           Button('退出登录')
             .width('100%')
             .padding(size.pagePadding)
@@ -211,23 +318,7 @@ struct UserPage {
               this.useShowDialog('logout', '');
             })
 
-          Text('修改密码')
-            .padding(size.smallPadding)
-            .border({
-              width: 1,
-              color: colors.borderColor,
-              style: BorderStyle.Solid
-            })
-            .borderRadius(size.blockBorderRaduis * 2)
-            .width('100%')
-            .padding(size.pagePadding)
-            .textAlign(TextAlign.Center)
-            .margin({ top: size.pagePadding, bottom: size.pagePadding })
-            .onClick(() => {
-              router.pushUrl({
-                url: 'pages/UpdatePasswordPage', // 目标url
-              });
-            })
+
         }.padding({ left: size.pagePadding, right: size.pagePadding })
       }.layoutWeight(1).scrollable(ScrollDirection.Vertical).align(Alignment.Top)
 

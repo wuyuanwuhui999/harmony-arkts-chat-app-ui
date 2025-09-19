@@ -7,6 +7,7 @@
     "pages/ForgetPasswordPage",
     "pages/ResetPasswordPage",
     "pages/UpdatePasswordPage",
-    "pages/ChatPage"
+    "pages/ChatPage",
+    "pages/TenantManagerPage"
   ]
 }

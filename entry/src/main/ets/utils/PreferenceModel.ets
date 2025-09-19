@@ -102,8 +102,8 @@ class PreferenceModel {
   }
 
   // 写入密码
-  async getTenantId(userId:string,) {
-    await this.getPreference(`${userId}:tenantId`);
+  async getTenantId(userId:string) {
+    return this.getPreference(`${userId}:tenantId`);
   }
 
   // 写入密码

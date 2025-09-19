@@ -168,7 +168,7 @@ export interface AdminParamsType {
 }
 
 // 文档的目录
-export interface DirectoryInterce {
+export interface DirectoryType {
   id?:string;// 目录id
   userId?:string;// 用户id
   directory:string;// 目录名称

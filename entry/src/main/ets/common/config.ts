@@ -11,3 +11,8 @@ export const PermissionValueMap = {// 权限映射
   '私密': 0,
   '公开': 1
 }
+
+export const SexValueMap = {// 男女映射
+  '私密': 0,
+  '公开': 1
+}

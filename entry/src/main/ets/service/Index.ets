@@ -132,8 +132,8 @@ export const getMyDocumentService = (tenantId:string):Promise<types.MyAwesomeDat
  * @date: 2025-07-12 11:31
  * @author wuwenqiang
  */
-export const deleteMyDocumentService = (docId:string,directoryId:string):Promise<types.MyAwesomeData<number>> => {
-  return httpRequest.delete<number>(`${api.deleteDoc}${docId}?directoryId=${directoryId}`);
+export const deleteMyDocumentService = (docId:string):Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.delete<number>(`${api.deleteDoc}${docId}`);
 }
 
 /**
@@ -141,8 +141,8 @@ export const deleteMyDocumentService = (docId:string,directoryId:string):Promise
  * @date: 2025-07-26 20:21
  * @author wuwenqiang
  */
-export const getDirectoryListService = (tenantId:string):Promise<types.MyAwesomeData<types.DirectoryInterce[]>> => {
-  return httpRequest.get<types.DirectoryInterce[]>(`${api.getDirectoryList}?tenantId=${tenantId}`);
+export const getDirectoryListService = (tenantId:string):Promise<types.MyAwesomeData<types.DirectoryType[]>> => {
+  return httpRequest.get<types.DirectoryType[]>(`${api.getDirectoryList}?tenantId=${tenantId}`);
 }
 
 /**
@@ -150,8 +150,8 @@ export const getDirectoryListService = (tenantId:string):Promise<types.MyAwesome
  * @date: 2025-07-27 12:42
  * @author wuwenqiang
  */
-export const createDirectoryService = (directory:types.DirectoryInterce):Promise<types.MyAwesomeData<types.DirectoryInterce>> => {
-  return httpRequest.post<types.DirectoryInterce>(api.createDir,directory);
+export const createDirectoryService = (directory:types.DirectoryType):Promise<types.MyAwesomeData<types.DirectoryType>> => {
+  return httpRequest.post<types.DirectoryType>(api.createDir,directory);
 }
 
 /**
