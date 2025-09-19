@@ -21,22 +21,6 @@ struct TenantManagerPage {
     .margin({ top: size.pagePadding })
   }
 
-  @Styles rowStyle(){
-    .border({
-      width: {
-        bottom: 1,
-      },
-      color: {
-        bottom: colors.pageBackgroundColor
-      },
-      style: {
-        bottom: BorderStyle.Solid
-      }
-    })
-    .width('100%')
-    .padding({ top: size.pagePadding, bottom: size.pagePadding })
-  }
-
   aboutToAppear(): void {
     getTenantUserListService(this.tenantUser.tenantId,this.pageNum,PAGE_SIZE).then((res)=>{
       this.tenantUserList.push(...res.data);
@@ -49,7 +33,7 @@ struct TenantManagerPage {
    * @date: 2025-04-13 12:07
    */
   @Builder
-  DeleteButton(tenantId:string,userId:string) {
+  DeleteButton(tenantUser:TenantUserType) {
     Column() {
       Text('删除')
         .fontColor(Color.White)
@@ -58,24 +42,32 @@ struct TenantManagerPage {
     .justifyContent(FlexAlign.Center)
     .width(80)
     .height('100%')
-    .backgroundColor(colors.warnColor)
+    .backgroundColor((tenantUser.roleType ==1 && this.tenantUser.roleType === 2 || tenantUser.roleType === 0) ? colors.warnColor : colors.disableTextColor)
     .onClick(() => {
 
     })
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 删除弹窗
+   * @date: 2025-04-13 12:07
+   */
+  @Builder
+  AddIcon() {
+    Image($r('app.media.icon_add'))
+      .width(size.smallIconSize)
+      .height(size.smallIconSize)
+      .onClick(() => {
+        console.log('设置图标被点击');
+      })
   }
 
   build() {
     Column() {
       NavigatorTitleComponent({
         title: "租户管理",
-        rightContent: () => {
-          Image($r('app.media.icon_add'))
-            .width(size.smallIconSize)
-            .height(size.smallIconSize)
-            .onClick(() => {
-              console.log('设置图标被点击');
-          })
-        }
+        rightContent: this.AddIcon
       })
       Scroll() {
         List(){
@@ -100,7 +92,7 @@ struct TenantManagerPage {
               .padding({top:index === 0 ? 0 : size.pagePadding,bottom:index === this.tenantUserList.length -1 ? 0 : size.pagePadding})
             }.swipeAction({
               end: () => {
-                return this.DeleteButton(item.tenantId,item.userId)
+                return this.DeleteButton(item)
               }
             })
 
