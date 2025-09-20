@@ -219,5 +219,11 @@ export const deleteAdminService = (tenantId:string,userId:string):Promise<types.
   return httpRequest.delete<types.TenantUserType>(api.deleteAdmin,params);
 }
 
-
-
+/**
+ * @description: 删除租户
+ * @date: 2025-09-20 14:33
+ * @author wuwenqiang
+ */
+export const deleteTenantUserService = (tenantId:string,userId:string):Promise<types.MyAwesomeData<boolean>> => {
+  return httpRequest.delete<boolean>(`${api.deleteTenantUser}/${tenantId}/${userId}`);
+}
