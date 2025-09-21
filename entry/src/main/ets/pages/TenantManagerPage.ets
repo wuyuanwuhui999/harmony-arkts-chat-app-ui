@@ -170,14 +170,10 @@ struct TenantManagerPage {
   addTenantUserBuilder() {
     Column() {
       Row() {
-        Image($r("app.media.icon_add"))
-          .width(size.normalFontSize)
-          .height(size.normalFontSize)
-          .opacity(0.5)
-          .onClick(() => {
-
-          })
-          .margin({ left: size.pagePadding })
+        Blank()
+          .width(size.smallIconSize)
+          .height(size.smallIconSize)
+          .margin({left:size.smallIconSize})
         Text('添加用户')
           .padding(size.pagePadding)
           .textAlign(TextAlign.Center)
@@ -203,7 +199,8 @@ struct TenantManagerPage {
         Row(){
           Row(){
             TextInput({
-              placeholder: "请输入用户姓名/工号/电话/邮箱"
+              placeholder: "请输入用户姓名/工号/电话/邮箱",
+              text:this.keyword
             })
               .height(size.middleAvaterSize)
               .layoutWeight(1)
@@ -227,9 +224,12 @@ struct TenantManagerPage {
               .onClick(()=>{
                 this.pageNum = 1;
                 this.searchUserList = [];
+                this.loadingController.showLoading()
                 searchUserListService(this.keyword,this.tenantUser.tenantId,this.pageNum,PAGE_SIZE).then((res)=>{
                   this.total = res.total;
                   this.searchUserList.push(...res.data);
+                }).finally(()=>{
+                  this.loadingController.showLoading()
                 })
               })
           }
@@ -273,7 +273,7 @@ struct TenantManagerPage {
               }
             })
           }
-        }.blockStyle()
+        }.blockStyle().margin({bottom:size.pagePadding,top:size.pagePadding})
       }
     }
     .backgroundColor(colors.pageBackgroundColor)
