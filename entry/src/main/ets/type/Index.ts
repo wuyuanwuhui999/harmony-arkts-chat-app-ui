@@ -85,6 +85,7 @@ export interface ChatParamsType {
   type:string,//查询的类型
   showThink:boolean,// 是否显示思考内容
   language:string//语言
+  docIds:string[]
 }
 
 // 聊天气泡
@@ -155,6 +156,7 @@ export interface DocumentType {
   updateTime: string// 更新时间
   directoryId:string// 目录id
   directoryName:string;// 目录名称
+  checked?:boolean;// 是否选中
 };
 
 export interface OptionType {
@@ -222,4 +224,11 @@ export interface AppStoreStateType {
 // 或者使用接口继承的方式
 export interface UserWithChecked extends UserDataType {
   checked: number;
+}
+
+export interface DocumentCheckType{
+  checked:boolean
+  directoryName:string;
+  directoryId:string;
+  docList:DocumentType[]
 }

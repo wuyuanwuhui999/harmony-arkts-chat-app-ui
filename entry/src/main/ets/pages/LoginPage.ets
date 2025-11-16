@@ -26,7 +26,7 @@ struct LoginPage {
 
   async aboutToAppear() {
     this.userAccount = this.userData?.userAccount || "吴时吴刻";
-    this.password = await preference.getPassword(this.userData?.userAccount!) as string || "12345678";
+    this.password = await preference.getPassword(this.userData?.userAccount!) as string || "123456";
   }
 
   @Styles
@@ -56,7 +56,6 @@ struct LoginPage {
   }
 
   useLogin = () => {
-    this.loadingController.showLoading();
     if (this.activeIndex === 0) {
       if (!this.userAccount) {
         return promptAction.showToast({
@@ -71,6 +70,7 @@ struct LoginPage {
           bottom: px2vp(display.getDefaultDisplaySync().height) / 2
         })
       }
+      this.loadingController.showLoading();
       this.loading = true;
       loginService(this.userAccount, this.password).then(async res => {
         promptAction.showToast({
@@ -92,7 +92,7 @@ struct LoginPage {
           bottom: px2vp(display.getDefaultDisplaySync().height) / 2
         })
       }).finally(() => {
-        this.loadingController.showLoading();
+        this.loadingController.hideLoading();
       })
     } else {
       if (!strictEmailRegex.test(this.email)) {

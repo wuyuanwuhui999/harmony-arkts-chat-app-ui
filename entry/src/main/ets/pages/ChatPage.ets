@@ -11,7 +11,8 @@ import {
   DocumentType,
   UserDataType,
   TenantUserType,
-  DirectoryType
+  DirectoryType,
+  DocumentCheckType
 } from '../type/Index';
 import { getModelListService, getChatHistoryService,getMyDocumentService,deleteMyDocumentService, getTenantUserService,
   getDirectoryListService} from '../service/Index';
@@ -27,7 +28,7 @@ import preference from '../utils/PreferenceModel';
 import OptionDialogComponent from '../components/OptionDialogComponent';
 import DialogComponent from "../components/DialogComponent";
 import BottomDialogComponent from "../components/BottomDialogComponent";
-
+import MarkdownRenderer from "../components/MarkdownRenderer";
 @Entry
 @Component
 export default struct ChatPage {
@@ -44,6 +45,7 @@ export default struct ChatPage {
   @State showHistory:boolean = false;
   private scroller: Scroller = new Scroller()
   private myDocList:DocumentType[] = [];
+  @State groupDocList:DocumentCheckType[] = [];
   @State chatList: Array<ChatType> = [
     {
       responseContent: "你好，我是智能音乐助手小吴同学，请问有什么可以帮助您？",
@@ -59,9 +61,19 @@ export default struct ChatPage {
   @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
   @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
   @State directoryList:Array<DirectoryType> = [];
+  @State checkedDocIds:string[]=[];
   private message: string = "";
   private dialogController: CustomDialogController | null = null
   private ws: webSocket.WebSocket | null = null;
+
+  @Styles
+  blockStyle(){
+    .backgroundColor(colors.blockColor)
+    .borderRadius(size.blockBorderRaduis)
+    .padding(size.pagePadding)
+    .width('100%')
+    .margin({ top: size.pagePadding })
+  }
 
   async aboutToAppear() {
     await this.getStorageTenant();
@@ -121,6 +133,7 @@ export default struct ChatPage {
         chatId: this.chatId, // 替换为实际聊天ID
         prompt: this.prompt.trim(),
         type:this.type,
+        docIds:this.type === "document" ? this.checkedDocIds : [],
         showThink:this.showThink,
         language: this.language // 如果需要上传文件，请根据实际情况调整
       };
@@ -376,6 +389,126 @@ export default struct ChatPage {
     })
   }
 
+  onClickDoc(){
+    getMyDocumentService(this.tenantUser.tenantId).then((res)=>{
+      this.groupDocList.length = 0;
+      res.data.forEach((aItem)=>{
+        let docGroupItem:DocumentCheckType|undefined = this.groupDocList.find((bItem)=> bItem.directoryId == aItem.directoryId)
+        if(!docGroupItem){
+          docGroupItem = {
+            checked:false,
+            directoryName:aItem.directoryName,
+            directoryId:aItem.directoryId,
+            docList:[]
+          }
+          this.groupDocList.push(docGroupItem);
+        }
+        aItem.checked = this.checkedDocIds.includes(aItem.id);
+        docGroupItem.docList.push(aItem);
+      })
+      this.dialogController = new CustomDialogController({
+      customStyle: true,
+      builder: BottomDialogComponent({
+        dialogHeight: '80%',
+        builder: this.documentCheckBuilder.bind(this)
+      }),
+      alignment: DialogAlignment.Bottom,
+    })
+      this.dialogController.open()
+    })
+  }
+
+  // popup构造器定义弹框内容
+  @Builder
+  documentCheckBuilder() {
+    Column() {
+      Row() {
+        Blank().width(size.smallIconSize).height(size.smallIconSize)
+        Text('知识库')
+          .padding(size.pagePadding)
+          .textAlign(TextAlign.Center)
+          .layoutWeight(1)
+        Image($r("app.media.icon_close"))
+          .width(size.normalFontSize)
+          .height(size.normalFontSize)
+          .opacity(0.5)
+          .onClick(() => {
+            this.dialogController?.close()
+          })
+          .margin({ right: size.pagePadding })
+      }
+      .width("100%")
+      .justifyContent(FlexAlign.Center)
+      .border({
+        width: { bottom: 1 },
+        color: { bottom: colors.borderColor },
+        style: { bottom: BorderStyle.Solid }
+      })
+      Scroll(){
+        Column({space:size.pagePadding}){
+          ForEach(this.groupDocList,(aItem:DocumentCheckType,aIndex:number)=>{
+            Column({space:size.pagePadding}){
+              Row({space:size.smallPadding}){
+                Text(aItem.directoryName)
+                Image($r("app.media.icon_arrow"))
+                  .height(size.smallPadding)
+              }.justifyContent(FlexAlign.Start)
+              ForEach(aItem.docList,(bItem:DocumentType,bIndex)=>{
+                Row(){
+                  Text(bItem.name).layoutWeight(1)
+                  Stack({ alignContent: Alignment.Center }) {
+                    // 圆形背景
+                    Circle({ width: size.middlIconSize, height: size.middlIconSize })
+                      .fill(bItem.checked ? '#007DFF' : '#F2F2F2')
+                      .stroke(bItem.checked ? '#007DFF' : '#999999')
+
+                    // 使用文字对勾
+                    if (bItem.checked) {
+                      Text('✓')
+                        .fontSize(size.middlIconSize/2)
+                        .fontColor(Color.White)
+                        .fontWeight(FontWeight.Bold)
+                    }
+                  }
+                  .onClick(() => {
+                    // 添加动画效果
+                    animateTo({ duration: 200 }, () => {
+                      bItem.checked = !bItem.checked;
+                      this.groupDocList.splice(aIndex,1,JSON.parse(JSON.stringify(aItem)));
+                      this.checkedDocIds.length = 0;
+                      this.groupDocList.forEach((cItem)=>{
+                        cItem.docList.forEach((dItem)=>{
+                          if(dItem.checked){
+                            this.checkedDocIds.push(dItem.id);
+                          }
+                        })
+                      })
+                    })
+                  })
+                }
+              })
+            }
+            .padding({bottom:aIndex !== this.groupDocList.length - 1 ? size.pagePadding : 0})
+            .border({
+              style: {
+                bottom: BorderStyle.Solid
+              },
+              width:{
+                bottom: aIndex !== this.groupDocList.length - 1 ? 1 : 0,
+              },
+              color:{
+                bottom:colors.disableTextColor
+              }
+            }).justifyContent(FlexAlign.Start).alignItems(HorizontalAlign.Start)
+          })
+        }.blockStyle().width("auto").margin(size.pagePadding).justifyContent(FlexAlign.Start).alignItems(HorizontalAlign.Start)
+      }
+      .align(Alignment.Top).layoutWeight(1).backgroundColor(colors.pageBackgroundColor)
+    }
+    .justifyContent(FlexAlign.Start)
+    .width("100%").height("100%")
+  }
+
   build() {
     Stack() {
       if (this.showHistory) {
@@ -523,7 +656,8 @@ export default struct ChatPage {
                                 .fontColor(colors.disableTextColor)
                             }
                             if (item.responseContent) {
-                              Text(item.responseContent)
+                              // Text(item.responseContent)
+                              MarkdownRenderer({markdownText:item.responseContent})
                             }
                           }.alignItems(HorizontalAlign.Start)
                         }
@@ -580,7 +714,8 @@ export default struct ChatPage {
                           .fontColor(colors.disableTextColor)
                       }
                       if (this.responseContent) {
-                        Text(this.responseContent)
+                        MarkdownRenderer({markdownText:this.responseContent})
+                        // Text(this.responseContent)
                       }
                     }
                   }
@@ -621,9 +756,25 @@ export default struct ChatPage {
               .onClick(()=>{
                 this.showThink = !this.showThink
               })
-            Text("查询文档")
-              .fontColor(this.type == "document" ? colors.tabSelectedColor :colors.disableTextColor)
-              .borderRadius(size.inputHeight)
+            Row({space:size.smallPadding}){
+              Text("知识库")
+                .fontColor(this.type == "document" ? colors.tabSelectedColor :colors.disableTextColor)
+                .onClick(()=>{
+                  this.type = this.type === "document" ? "" : "document";
+                })
+              Image(this.type === "document" ? $r("app.media.icon_setting_active") : $r("app.media.icon_setting_disabled"))
+                .width(size.smallIconSize)
+                .height(size.smallIconSize)
+                .onClick(()=>{
+                  if(this.type !== "document"){
+                    this.type = "document";
+                  }else{
+                    this.onClickDoc()
+                  }
+                })
+            }
+            .backgroundColor(colors.blockColor)
+            .borderRadius(size.inputHeight)
               .border({
                 width:1,
                 color:this.type == "document" ? colors.tabSelectedColor :colors.disableTextColor,
@@ -635,10 +786,7 @@ export default struct ChatPage {
                 left:size.pagePadding,
                 right:size.pagePadding
               })
-              .backgroundColor(colors.blockColor)
-              .onClick(()=>{
-                this.type = this.type === "document" ? "" : "document"
-              })
+
             Text("查询数据库")
               .fontColor(this.type == "db" ? colors.tabSelectedColor :colors.disableTextColor)
               .borderRadius(size.inputHeight)
