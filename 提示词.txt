@@ -11,15 +11,16 @@
 ## 1. 文件组织结构
 - 完整页面放在 `page/`
 - 可复用组件放在 `components/`
-- 所有数据类型放在 `type/` 目录下。
+- 所有数据类型放在 `type/index.ets` 文件下。
 - 所有工具方法放在 `utils/` 目录下
-- 请求后端的方法放在 `service/` 目录下
+- 所有api地址放在 `api/index.ts`文件下
+- 请求后端的方法放在 `service/index.ets` 文件下
 
 ## 2. 间距与尺寸规范
-- **所有间距**（padding、margin、图标间距、按钮间距、图文间距、布局间距、边距、条目上下间隔等）统一使用 `theme/size/middleGap`。
-- 按钮高度：`theme/size/btnHeight`，圆角 = `btnHeight / 2`。
-- 输入框/搜索框高度：`theme/size/inputHeight`，圆角 = `inputHeight / 2`。
-- 卡片圆角：`theme/size/middleBorderRadius`。
+- **所有间距**（padding、margin、图标间距、按钮间距、图文间距、布局间距、边距、条目上下间隔等）统一使用 `theme/size.middleGap`。
+- 按钮高度：`theme/size.btnHeight`，圆角 = `size.btnHeight / 2`。
+- 输入框/搜索框高度：`theme/size.inputHeight`，圆角 = `size.inputHeight / 2`。
+- 卡片圆角：`theme/size.middleBorderRadius`。
 - 图标尺寸：
   - 小图标：`theme/size.smallIcon`
   - 中图标：`theme/size.middleIcon`

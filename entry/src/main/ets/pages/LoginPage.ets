@@ -303,7 +303,7 @@ struct LoginPage {
           .width('100%')
           .padding(size.middleGap)
           .textAlign(TextAlign.Center)
-          .backgroundColor(colors.warn)
+          .backgroundColor(colors.primary)
           .margin({ top: size.middleGap })
           .fontColor(Color.White)
           .borderRadius(size.middleBorderRaduis * 2)
@@ -332,15 +332,10 @@ struct LoginPage {
             router.clear(); // 清除历史页面
           })
 
-        Text('忘记密码')
+        Text('忘记密码?')
           .padding(size.smallGap)
-          .border({
-            width: 1,
-            color: colors.borderColor,
-            style: BorderStyle.Solid
-          })
-          .borderRadius(size.middleBorderRaduis * 2)
           .width('100%')
+          .fontColor(colors.gray)
           .padding(size.middleGap)
           .textAlign(TextAlign.Center)
           .margin({ top: size.middleGap })
