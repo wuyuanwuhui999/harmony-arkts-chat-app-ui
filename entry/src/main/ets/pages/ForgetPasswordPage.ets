@@ -21,11 +21,11 @@ struct LoginPage {
 
   @Styles
   blockStyle(){
-    .backgroundColor(colors.blockColor)
-    .borderRadius(size.blockBorderRaduis)
-    .padding(size.pagePadding)
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .padding(size.middleGap)
     .width('100%')
-    .margin({ top: size.pagePadding })
+    .margin({ top: size.middleGap })
   }
 
   @Styles
@@ -35,14 +35,14 @@ struct LoginPage {
         bottom: 1,
       },
       color: {
-        bottom: colors.pageBackgroundColor
+        bottom: colors.pageBackground
       },
       style: {
         bottom: BorderStyle.Solid
       }
     })
     .width('100%')
-    .padding({ top: size.pagePadding, bottom: size.pagePadding })
+    .padding({ top: size.middleGap, bottom: size.middleGap })
   }
 
   useSumbit = () => {
@@ -89,7 +89,7 @@ struct LoginPage {
         NavigatorTitleComponent({ title: "忘记密码" })
         Column() {
           Row() {
-            Text("*").fontColor(colors.warnColor)
+            Text("*").fontColor(colors.warn)
             TextInput({ placeholder: "请输入邮箱" })
               .layoutWeight(1)
               .backgroundColor(Color.Transparent)
@@ -102,17 +102,17 @@ struct LoginPage {
 
           Text('提交')
             .width('100%')
-            .padding(size.pagePadding)
+            .padding(size.middleGap)
             .textAlign(TextAlign.Center)
-            .backgroundColor(colors.warnColor)
-            .margin({ top: size.pagePadding })
+            .backgroundColor(colors.warn)
+            .margin({ top: size.middleGap })
             .fontColor(Color.White)
-            .borderRadius(size.blockBorderRaduis * 2)
+            .borderRadius(size.middleBorderRaduis * 2)
             .onClick(this.useSumbit)
 
         }
-        .padding({ left: size.pagePadding, right: size.pagePadding })
-        .backgroundColor(colors.pageBackgroundColor)
+        .padding({ left: size.middleGap, right: size.middleGap })
+        .backgroundColor(colors.pageBackground)
       }
       .width('100%')
       .height('100%')

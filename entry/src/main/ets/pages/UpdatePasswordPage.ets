@@ -15,11 +15,11 @@ struct UpdatePasswordPage {
   loading:boolean = false;
 
   @Styles blockStyle(){
-    .backgroundColor(colors.blockColor)
-    .borderRadius(size.blockBorderRaduis)
-    .padding(size.pagePadding)
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .padding(size.middleGap)
     .width('100%')
-    .margin({ top: size.pagePadding })
+    .margin({ top: size.middleGap })
   }
 
   @Styles rowStyle(){
@@ -28,14 +28,14 @@ struct UpdatePasswordPage {
         bottom: 1,
       },
       color: {
-        bottom: colors.pageBackgroundColor
+        bottom: colors.pageBackground
       },
       style: {
         bottom: BorderStyle.Solid
       }
     })
     .width('100%')
-    .padding({ top: size.pagePadding, bottom: size.pagePadding })
+    .padding({ top: size.middleGap, bottom: size.middleGap })
   }
 
   verify(value: string, title: string) {
@@ -90,7 +90,7 @@ struct UpdatePasswordPage {
       Column() {
         Column(){
           Row() {
-            Text("*").fontColor(colors.warnColor)
+            Text("*").fontColor(colors.warn)
             TextInput({ placeholder: "请输入旧密码" })
               .layoutWeight(1)
               .type(InputType.Password)
@@ -99,9 +99,9 @@ struct UpdatePasswordPage {
                 this.oldPassword = value;
               })
           }
-          Divider().height(size.pagePadding).color(colors.borderColor)
+          Divider().height(size.middleGap).color(colors.borderColor)
           Row() {
-            Text("*").fontColor(colors.warnColor)
+            Text("*").fontColor(colors.warn)
             TextInput({ placeholder: "请输入新密码" })
               .layoutWeight(1)
               .type(InputType.Password)
@@ -109,10 +109,10 @@ struct UpdatePasswordPage {
               .onChange((value) => {
                 this.newPassword = value;
               })
-          }.margin({top:size.pagePadding})
-          Divider().height(size.pagePadding).color(colors.borderColor)
+          }.margin({top:size.middleGap})
+          Divider().height(size.middleGap).color(colors.borderColor)
           Row() {
-            Text("*").fontColor(colors.warnColor)
+            Text("*").fontColor(colors.warn)
             TextInput({ placeholder: "请输入新确认密码" })
               .layoutWeight(1)
               .type(InputType.Password)
@@ -120,25 +120,25 @@ struct UpdatePasswordPage {
               .onChange((value) => {
                 this.newComfirmPassword = value;
               })
-          }.margin({top:size.pagePadding})
+          }.margin({top:size.middleGap})
         }
         .blockStyle()
 
         Text('确定')
           .width('100%')
-          .padding(size.pagePadding)
+          .padding(size.middleGap)
           .textAlign(TextAlign.Center)
-          .backgroundColor(colors.warnColor)
-          .margin({ top: size.pagePadding })
+          .backgroundColor(colors.warn)
+          .margin({ top: size.middleGap })
           .fontColor(Color.White)
-          .borderRadius(size.blockBorderRaduis * 2)
+          .borderRadius(size.middleBorderRaduis * 2)
           .onClick(this.useSumbit)
 
       }
       .width('100%')
       .height('100%')
-      .padding({left:size.pagePadding,right:size.pagePadding})
-      .backgroundColor(colors.pageBackgroundColor)
+      .padding({left:size.middleGap,right:size.middleGap})
+      .backgroundColor(colors.pageBackground)
     }
   }
 }

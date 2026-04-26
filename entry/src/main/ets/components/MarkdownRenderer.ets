@@ -219,9 +219,7 @@ export default struct MarkdownRenderer {
 
   @Builder
   buildMarkdownElements() {
-    const elements = MarkdownParser.parse(this.markdownText)
-
-    ForEach(elements, (element: MarkdownElement) => {
+    ForEach(MarkdownParser.parse(this.markdownText), (element: MarkdownElement) => {
       this.renderElement(element)
     })
   }
@@ -265,10 +263,8 @@ export default struct MarkdownRenderer {
 
   @Builder
   renderParagraph(content: string) {
-    const spans = MarkdownParser.parseInline(content)
-
     Column() {
-      ForEach(spans, (span: InlineSpan) => {
+      ForEach(MarkdownParser.parseInline(content), (span: InlineSpan) => {
         if (span.isLink) {
           Text(span.text)
             .fontColor('#007DFF')

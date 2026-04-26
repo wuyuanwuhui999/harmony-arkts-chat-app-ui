@@ -34,7 +34,7 @@ export default struct GlobalLoading {
           LoadingProgress()
             .width(80)
             .height(80)
-            .color(colors.disableTextColor) // 修改动画颜色[5]()
+            .color(colors.gray) // 修改动画颜色[5]()
           Text(this.message)
             .margin({ top: 20 })
         }

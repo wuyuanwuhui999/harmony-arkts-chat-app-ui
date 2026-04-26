@@ -28,18 +28,18 @@ struct UserPage {
 
   @Styles
   blockStyle(){
-    .backgroundColor(colors.blockColor)
-    .borderRadius(size.blockBorderRaduis)
-    .padding(size.pagePadding)
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .padding(size.middleGap)
     .width('100%')
-    .margin({ top: size.pagePadding })
+    .margin({ top: size.middleGap })
   }
 
   @Styles
   arrowStyle(){
-    .margin({ left: size.smallPadding })
-    .height(size.smallIconSize)
-    .width(size.smallIconSize)
+    .margin({ left: size.smallGap })
+    .height(size.smallIcon)
+    .width(size.smallIcon)
   }
 
   @Styles
@@ -49,14 +49,14 @@ struct UserPage {
         bottom: 1,
       },
       color: {
-        bottom: colors.pageBackgroundColor
+        bottom: colors.pageBackground
       },
       style: {
         bottom: BorderStyle.Solid
       }
     })
     .width('100%')
-    .padding({ top: size.pagePadding, bottom: size.pagePadding })
+    .padding({ top: size.middleGap, bottom: size.middleGap })
   }
 
   aboutToAppear() {
@@ -166,9 +166,9 @@ struct UserPage {
             Row() {
               Text('头像').flexGrow(1)
               Image(this.userData?.avater ? HOST + this.userData.avater : $r('app.media.default_avater'))
-                .height(size.bigAvaterSize)
-                .width(size.bigAvaterSize)
-                .borderRadius(size.bigAvaterSize)
+                .height(size.bigAvater)
+                .width(size.bigAvater)
+                .borderRadius(size.bigAvater)
               Image($r('app.media.icon_arrow')).arrowStyle()
             }.rowStyle().justifyContent(FlexAlign.Center)
 
@@ -235,21 +235,21 @@ struct UserPage {
               this.useShowDialog('区域', 'region')
             })
 
-          }.blockStyle().padding({ top: 0, left: size.pagePadding, right: size.pagePadding })
+          }.blockStyle().padding({ top: 0, left: size.middleGap, right: size.middleGap })
 
           Text('修改密码')
-            .padding(size.smallPadding)
+            .padding(size.smallGap)
             .border({
               width: 1,
               color: colors.borderColor,
               style: BorderStyle.Solid
             })
-            .backgroundColor(colors.blockColor)
-            .borderRadius(size.blockBorderRaduis * 2)
+            .backgroundColor(colors.white)
+            .borderRadius(size.middleBorderRaduis * 2)
             .width('100%')
-            .padding(size.pagePadding)
+            .padding(size.middleGap)
             .textAlign(TextAlign.Center)
-            .margin({ top: size.pagePadding})
+            .margin({ top: size.middleGap})
             .onClick(() => {
               router.pushUrl({
                 url: 'pages/UpdatePasswordPage', // 目标url
@@ -258,18 +258,18 @@ struct UserPage {
 
           if(this.tenantList.length > 0){
             Text('切换租户')
-              .padding(size.smallPadding)
+              .padding(size.smallGap)
               .border({
                 width: 1,
                 color: colors.borderColor,
                 style: BorderStyle.Solid
               })
-              .backgroundColor(colors.blockColor)
-              .borderRadius(size.blockBorderRaduis * 2)
+              .backgroundColor(colors.white)
+              .borderRadius(size.middleBorderRaduis * 2)
               .width('100%')
-              .padding(size.pagePadding)
+              .padding(size.middleGap)
               .textAlign(TextAlign.Center)
-              .margin({ top: size.pagePadding })
+              .margin({ top: size.middleGap })
               .onClick(() => {
                 this.dialogController = new CustomDialogController({
                   customStyle: true,
@@ -288,18 +288,18 @@ struct UserPage {
 
           if(this.tenantUser.roleType > 1){
             Text('租户管理')
-              .padding(size.smallPadding)
+              .padding(size.smallGap)
               .border({
                 width: 1,
                 color: colors.borderColor,
                 style: BorderStyle.Solid
               })
-              .backgroundColor(colors.blockColor)
-              .borderRadius(size.blockBorderRaduis * 2)
+              .backgroundColor(colors.white)
+              .borderRadius(size.middleBorderRaduis * 2)
               .width('100%')
-              .padding(size.pagePadding)
+              .padding(size.middleGap)
               .textAlign(TextAlign.Center)
-              .margin({ top: size.pagePadding})
+              .margin({ top: size.middleGap})
               .onClick(() => {
                 router.pushUrl({
                   url: 'pages/TenantManagerPage', // 目标url
@@ -309,24 +309,24 @@ struct UserPage {
 
           Button('退出登录')
             .width('100%')
-            .padding(size.pagePadding)
-            .backgroundColor(colors.warnColor)
-            .margin({ top: size.pagePadding })
+            .padding(size.middleGap)
+            .backgroundColor(colors.warn)
+            .margin({ top: size.middleGap })
             .fontColor(Color.White)
-            .borderRadius(size.blockBorderRaduis * 2)
+            .borderRadius(size.middleBorderRaduis * 2)
             .onClick(() => {
               this.useShowDialog('logout', '');
             })
 
 
-        }.padding({ left: size.pagePadding, right: size.pagePadding })
+        }.padding({ left: size.middleGap, right: size.middleGap })
       }.layoutWeight(1).scrollable(ScrollDirection.Vertical).align(Alignment.Top)
 
     }
     .width('100%')
     .height('100%')
     .justifyContent(FlexAlign.Start)
-    .backgroundColor(colors.pageBackgroundColor)
+    .backgroundColor(colors.pageBackground)
   }
 }
 
@@ -351,21 +351,21 @@ struct CustomDialogComponent {
   }
 
   build() {
-    Column({ space: size.pagePadding }) {
+    Column({ space: size.middleGap }) {
       Text("请输入")
-        .margin({ top: size.pagePadding })
+        .margin({ top: size.middleGap })
       Row() {
         Text(this.title)
-          .margin({ right: size.smallIconSize })
+          .margin({ right: size.smallIcon })
         TextInput({ placeholder: '请输入', text: this.text })
           .layoutWeight(1)
-          .backgroundColor(colors.pageBackgroundColor)
+          .backgroundColor(colors.pageBackground)
           .height(size.lineHeight * 2)
           .onChange((value: string) => {
             this.value = value
           })
       }.width('100%')
-      .padding({ left: size.pagePadding, right: size.pagePadding })
+      .padding({ left: size.middleGap, right: size.middleGap })
       .alignItems(VerticalAlign.Center)
 
       Row() {
@@ -376,7 +376,7 @@ struct CustomDialogComponent {
           })
           .flexGrow(1)
           .textAlign(TextAlign.Center)
-          .backgroundColor(colors.blockColor)
+          .backgroundColor(colors.white)
           .fontColor(Color.Black)
         Divider().width(1).height('100%').backgroundColor(colors.borderColor)
         Text('确定')
@@ -385,7 +385,7 @@ struct CustomDialogComponent {
           })
           .flexGrow(1)
           .textAlign(TextAlign.Center)
-          .backgroundColor(colors.blockColor)
+          .backgroundColor(colors.white)
           .fontColor(Color.Red)
       }.height(size.dialogBtnHeight).border({
         width: {
@@ -400,8 +400,8 @@ struct CustomDialogComponent {
       })
       .width('100%')
     }
-    .backgroundColor(colors.blockColor)
-    .borderRadius(size.blockBorderRaduis)
-    .margin({ left: size.pagePadding, right: size.pagePadding })
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .margin({ left: size.middleGap, right: size.middleGap })
   }
 }

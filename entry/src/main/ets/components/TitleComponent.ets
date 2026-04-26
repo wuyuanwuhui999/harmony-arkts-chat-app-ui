@@ -12,10 +12,9 @@ export default struct TitleComponent{
       Divider()
         .height(size.lineHeight)
         .width(size.lineWidth)
-        .backgroundColor(colors.lineBackgroundColor)
-        .margin({right:size.smallPadding})
-      Text(this.title).fontSize(size.normalFontSize)
+        .margin({right:size.smallGap})
+      Text(this.title).fontSize(size.middleFont)
     }.alignSelf(ItemAlign.Start)
-    .margin({bottom:this.showMarginBottom ? size.pagePadding : 0})
+    .margin({bottom:this.showMarginBottom ? size.middleGap : 0})
   }
 }

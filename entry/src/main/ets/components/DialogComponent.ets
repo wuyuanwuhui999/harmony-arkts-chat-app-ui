@@ -18,7 +18,7 @@ export default struct DialogComponent {
   build() {
     Column() {
       Text(this.title)
-        .padding(size.pagePadding * 2)
+        .padding(size.middleGap * 2)
       Row() {
         Text('取消')
           .onClick(() => {
@@ -27,19 +27,19 @@ export default struct DialogComponent {
           })
           .flexGrow(1)
           .textAlign(TextAlign.Center)
-          .backgroundColor(colors.blockColor)
+          .backgroundColor(colors.white)
           .fontColor(Color.Black)
           .onClick(() => {
             this.cancel()
           })
-        Divider().height('100%').width(1).backgroundColor(colors.pageBackgroundColor)
+        Divider().height('100%').width(1).backgroundColor(colors.pageBackground)
         Text('确定')
           .onClick(() => {
             this.confirm()
           })
           .flexGrow(1)
           .textAlign(TextAlign.Center)
-          .backgroundColor(colors.blockColor)
+          .backgroundColor(colors.white)
           .fontColor(Color.Red)
           .onClick(() => {
             this.confirm()
@@ -49,7 +49,7 @@ export default struct DialogComponent {
           top: 1,
         },
         color: {
-          top: colors.pageBackgroundColor
+          top: colors.pageBackground
         },
         style: {
           top: BorderStyle.Solid
@@ -57,8 +57,8 @@ export default struct DialogComponent {
       }).alignItems(VerticalAlign.Center).width('100%').height(size.dialogBtnHeight)
     }
     .width('100%')
-    .backgroundColor(colors.blockColor)
-    .borderRadius(size.blockBorderRaduis)
-    .margin({ left: size.pagePadding, right: size.pagePadding })
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .margin({ left: size.middleGap, right: size.middleGap })
   }
 }

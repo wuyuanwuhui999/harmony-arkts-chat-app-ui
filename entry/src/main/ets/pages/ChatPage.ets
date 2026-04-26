@@ -68,11 +68,11 @@ export default struct ChatPage {
 
   @Styles
   blockStyle(){
-    .backgroundColor(colors.blockColor)
-    .borderRadius(size.blockBorderRaduis)
-    .padding(size.pagePadding)
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .padding(size.middleGap)
     .width('100%')
-    .margin({ top: size.pagePadding })
+    .margin({ top: size.middleGap })
   }
 
   async aboutToAppear() {
@@ -254,25 +254,25 @@ export default struct ChatPage {
     Column() {
       Row() {
         Image($r("app.media.icon_add"))
-          .width(size.normalFontSize)
-          .height(size.normalFontSize)
+          .width(size.middleFont)
+          .height(size.middleFont)
           .opacity(0.5)
           .onClick(() => {
 
           })
-          .margin({ left: size.pagePadding })
+          .margin({ left: size.middleGap })
         Text('选择文件夹')
-          .padding(size.pagePadding)
+          .padding(size.middleGap)
           .textAlign(TextAlign.Center)
           .layoutWeight(1)
         Image($r("app.media.icon_close"))
-          .width(size.normalFontSize)
-          .height(size.normalFontSize)
+          .width(size.middleFont)
+          .height(size.middleFont)
           .opacity(0.5)
           .onClick(() => {
             this.dialogController?.close()
           })
-          .margin({ right: size.pagePadding })
+          .margin({ right: size.middleGap })
       }
       .justifyContent(FlexAlign.Center)
       .border({
@@ -283,10 +283,10 @@ export default struct ChatPage {
     }
     Column(){
 
-    }.backgroundColor(colors.pageBackgroundColor).padding({
-      left: size.pagePadding,
-      right: size.pagePadding,
-      top: size.pagePadding
+    }.backgroundColor(colors.pageBackground).padding({
+      left: size.middleGap,
+      right: size.middleGap,
+      top: size.middleGap
     }).flexGrow(1)
   }
 
@@ -294,9 +294,9 @@ export default struct ChatPage {
   @Builder
   popupBuilder() {
     Column() {
-      Text("上传文档").height(size.popupMenuHeight).onClick(this.onShowDirectoryDialog)
+      Text("上传文档").height(size.btnHeight).onClick(this.onShowDirectoryDialog)
       Divider().height(1).color(colors.borderColor)
-      Text("我的文档").height(size.popupMenuHeight).onClick(()=>{
+      Text("我的文档").height(size.btnHeight).onClick(()=>{
         this.showMyDoc = true;
         this.showMenu = false;
         getMyDocumentService(this.tenantUser.tenantId).then((res)=>{
@@ -304,14 +304,14 @@ export default struct ChatPage {
         });
       })
       Divider().height(1).color(colors.borderColor)
-      Text("历史记录").height(size.popupMenuHeight).onClick(()=>{
+      Text("历史记录").height(size.btnHeight).onClick(()=>{
         this.showMenu = false;
         this.showHistory = true;
         this.chatHistoryGroup = {};
         this.useChatHistory();
       })
       Divider().height(1).color(colors.borderColor)
-      Text("切换模型").height(size.popupMenuHeight).onClick(this.onTabModel)
+      Text("切换模型").height(size.btnHeight).onClick(this.onTabModel)
     }
     .width(size.popupMenuWidth)
   }
@@ -356,7 +356,7 @@ export default struct ChatPage {
     .justifyContent(FlexAlign.Center)
     .width(80)
     .height('100%')
-    .backgroundColor(colors.warnColor)
+    .backgroundColor(colors.warn)
     .onClick(() => {
       this.dialogController = new CustomDialogController({
         customStyle: false,
@@ -423,19 +423,19 @@ export default struct ChatPage {
   documentCheckBuilder() {
     Column() {
       Row() {
-        Blank().width(size.smallIconSize).height(size.smallIconSize)
+        Blank().width(size.smallIcon).height(size.smallIcon)
         Text('知识库')
-          .padding(size.pagePadding)
+          .padding(size.middleGap)
           .textAlign(TextAlign.Center)
           .layoutWeight(1)
         Image($r("app.media.icon_close"))
-          .width(size.normalFontSize)
-          .height(size.normalFontSize)
+          .width(size.middleFont)
+          .height(size.middleFont)
           .opacity(0.5)
           .onClick(() => {
             this.dialogController?.close()
           })
-          .margin({ right: size.pagePadding })
+          .margin({ right: size.middleGap })
       }
       .width("100%")
       .justifyContent(FlexAlign.Center)
@@ -445,27 +445,27 @@ export default struct ChatPage {
         style: { bottom: BorderStyle.Solid }
       })
       Scroll(){
-        Column({space:size.pagePadding}){
+        Column({space:size.middleGap}){
           ForEach(this.groupDocList,(aItem:DocumentCheckType,aIndex:number)=>{
-            Column({space:size.pagePadding}){
-              Row({space:size.smallPadding}){
+            Column({space:size.middleGap}){
+              Row({space:size.smallGap}){
                 Text(aItem.directoryName)
                 Image($r("app.media.icon_arrow"))
-                  .height(size.smallPadding)
+                  .height(size.smallGap)
               }.justifyContent(FlexAlign.Start)
               ForEach(aItem.docList,(bItem:DocumentType,bIndex)=>{
                 Row(){
                   Text(bItem.name).layoutWeight(1)
                   Stack({ alignContent: Alignment.Center }) {
                     // 圆形背景
-                    Circle({ width: size.middlIconSize, height: size.middlIconSize })
+                    Circle({ width: size.middleIcon, height: size.middleIcon })
                       .fill(bItem.checked ? '#007DFF' : '#F2F2F2')
                       .stroke(bItem.checked ? '#007DFF' : '#999999')
 
                     // 使用文字对勾
                     if (bItem.checked) {
                       Text('✓')
-                        .fontSize(size.middlIconSize/2)
+                        .fontSize(size.middleIcon/2)
                         .fontColor(Color.White)
                         .fontWeight(FontWeight.Bold)
                     }
@@ -488,7 +488,7 @@ export default struct ChatPage {
                 }
               })
             }
-            .padding({bottom:aIndex !== this.groupDocList.length - 1 ? size.pagePadding : 0})
+            .padding({bottom:aIndex !== this.groupDocList.length - 1 ? size.middleGap : 0})
             .border({
               style: {
                 bottom: BorderStyle.Solid
@@ -497,13 +497,13 @@ export default struct ChatPage {
                 bottom: aIndex !== this.groupDocList.length - 1 ? 1 : 0,
               },
               color:{
-                bottom:colors.disableTextColor
+                bottom:colors.gray
               }
             }).justifyContent(FlexAlign.Start).alignItems(HorizontalAlign.Start)
           })
-        }.blockStyle().width("auto").margin(size.pagePadding).justifyContent(FlexAlign.Start).alignItems(HorizontalAlign.Start)
+        }.blockStyle().width("auto").margin(size.middleGap).justifyContent(FlexAlign.Start).alignItems(HorizontalAlign.Start)
       }
-      .align(Alignment.Top).layoutWeight(1).backgroundColor(colors.pageBackgroundColor)
+      .align(Alignment.Top).layoutWeight(1).backgroundColor(colors.pageBackground)
     }
     .justifyContent(FlexAlign.Start)
     .width("100%").height("100%")
@@ -514,10 +514,10 @@ export default struct ChatPage {
       if (this.showHistory) {
         Row() {
           Scroll() {
-            Column({ space: size.pagePadding }) {
+            Column({ space: size.middleGap }) {
               ForEach(Object.keys(this.chatHistoryGroup), (key: string) => {
-                Column({ space: size.miniPadding }) {
-                  Text(key).fontColor(colors.disableTextColor)
+                Column({ space: size.miniGap }) {
+                  Text(key).fontColor(colors.gray)
                   ForEach(this.chatHistoryGroup[key], (items: ChatHistoryType[]) => {
                     Text(items[0].prompt)
                       .maxLines(1)// 限制最大行数为1
@@ -550,15 +550,15 @@ export default struct ChatPage {
             }
           })
           .align(Alignment.TopStart)
-          .padding(size.pagePadding)
+          .padding(size.middleGap)
           .width("70%")
-          .backgroundColor(colors.blockColor)
+          .backgroundColor(colors.white)
           .height("100%")
 
           Row()
             .height("100%")
             .layoutWeight(1)
-            .backgroundColor(colors.tabNormalColor)
+            .backgroundColor(colors.black)
             .opacity(0.5)
             .onClick(() => {
               this.showHistory = false
@@ -573,8 +573,8 @@ export default struct ChatPage {
             List() {
               ForEach(this.myDocList, (item: DocumentType, index: number) => {
                 ListItem() {
-                  Column({ space: size.miniPadding }) {
-                    Text(formatTime(item.createTime)).fontColor(colors.disableTextColor)
+                  Column({ space: size.miniGap }) {
+                    Text(formatTime(item.createTime)).fontColor(colors.gray)
                     Text(item.name)
                       .maxLines(2)// 限制最大行数为1
                       .textOverflow({ overflow: TextOverflow.Ellipsis })// 溢出时显示省略号
@@ -589,15 +589,15 @@ export default struct ChatPage {
             }
           }
           .align(Alignment.TopStart)
-          .padding(size.pagePadding)
+          .padding(size.middleGap)
           .width("70%")
-          .backgroundColor(colors.blockColor)
+          .backgroundColor(colors.white)
           .height("100%")
 
           Row()
             .height("100%")
             .layoutWeight(1)
-            .backgroundColor(colors.tabNormalColor)
+            .backgroundColor(colors.black)
             .opacity(0.5)
             .onClick(() => {
               this.showMyDoc = false
@@ -609,15 +609,15 @@ export default struct ChatPage {
       }
       Column() {
         Row() {
-          AvaterComponent({dimensions:size.middleAvaterSize,avater:this.userData.avater}).onClick(()=>{
+          AvaterComponent({dimensions:size.middleAvater,avater:this.userData.avater}).onClick(()=>{
             router.pushUrl({
               url: 'pages/UserPage'
             });
           })
           Text("当前接入模型：" + this.activeModelName).layoutWeight(1).textAlign(TextAlign.Center)
           Image($r('app.media.icon_menu'))
-            .width(size.smallIconSize)
-            .height(size.smallIconSize)
+            .width(size.smallIcon)
+            .height(size.smallIcon)
             .opacity(size.opacity)
             .onClick(() => {
               this.showMenu = true;
@@ -625,35 +625,35 @@ export default struct ChatPage {
             .bindPopup(this.showMenu, {
               builder: this.popupBuilder, // 气泡的内容
               placement: Placement.Bottom, // 气泡的弹出位置
-              popupColor: colors.disableTextColor // 气泡的背景色
+              popupColor: colors.gray // 气泡的背景色
             })
         }
         .alignItems(VerticalAlign.Center)
-        .padding(size.pagePadding)
-        .backgroundColor(colors.blockColor)
+        .padding(size.middleGap)
+        .backgroundColor(colors.white)
 
         Scroll(this.scroller) {
-          Column({ space: size.pagePadding }) {
+          Column({ space: size.middleGap }) {
             ForEach(this.chatList, (item: ChatType, index: number) => {
               if (item.position == PositionEnum.LEFT) {
                 if (item.thinkContent || item.responseContent) {
                   Row() {
                     Image($r("app.media.icon_ai"))
-                      .width(size.middlIconSize)
-                      .height(size.middlIconSize)
-                      .margin({ right: size.smallIconSize })
+                      .width(size.middleIcon)
+                      .height(size.middleIcon)
+                      .margin({ right: size.smallIcon })
                     Row() {
                       Image($r("app.media.icon_triangle"))
-                        .width(size.smallIconSize)
-                        .height(size.smallIconSize)
+                        .width(size.smallIcon)
+                        .height(size.smallIcon)
                         .alignSelf(ItemAlign.Start)
-                        .position({ x: -size.smallIconSize / 1.5, y: size.smallIconSize / 2 })
+                        .position({ x: -size.smallIcon / 1.5, y: size.smallIcon / 2 })
                       Row() {
                         Row(){
                           Column(){
                             if (item.thinkContent) {
                               Text(item.thinkContent?.replace(/^(<think>)|(<\/think>)$/g, ""))
-                                .fontColor(colors.disableTextColor)
+                                .fontColor(colors.gray)
                             }
                             if (item.responseContent) {
                               // Text(item.responseContent)
@@ -662,10 +662,10 @@ export default struct ChatPage {
                           }.alignItems(HorizontalAlign.Start)
                         }
                         .justifyContent(FlexAlign.Start)
-                        .backgroundColor(colors.blockColor)
+                        .backgroundColor(colors.white)
                         .justifyContent(FlexAlign.Start)
-                        .borderRadius(size.blockBorderRaduis)
-                        .padding(size.pagePadding)
+                        .borderRadius(size.middleBorderRaduis)
+                        .padding(size.middleGap)
                       }.layoutWeight(1)
                     }.layoutWeight(1)
                   }
@@ -677,18 +677,18 @@ export default struct ChatPage {
                 Row() {
                   Row() {
                     Text(item.text)
-                      .backgroundColor(colors.blockColor)
-                      .borderRadius(size.blockBorderRaduis)
-                      .padding(size.pagePadding)
+                      .backgroundColor(colors.white)
+                      .borderRadius(size.middleBorderRaduis)
+                      .padding(size.middleGap)
                     Image($r("app.media.icon_triangle"))
-                      .width(size.smallIconSize)
-                      .height(size.smallIconSize)
+                      .width(size.smallIcon)
+                      .height(size.smallIcon)
                       .alignSelf(ItemAlign.Start)
                       .rotate({ angle: 180 })
-                      .position({ right: -size.smallIconSize / 1.5, top: size.smallIconSize / 2 })
+                      .position({ right: -size.smallIcon / 1.5, top: size.smallIcon / 2 })
                   }.layoutWeight(1).justifyContent(FlexAlign.End)
 
-                  AvaterComponent({ dimensions: size.middlIconSize,avater:this.userData.avater }).margin({ left: size.smallIconSize })
+                  AvaterComponent({ dimensions: size.middleIcon,avater:this.userData.avater }).margin({ left: size.smallIcon })
                 }
                 .width("100%")
               }
@@ -696,22 +696,22 @@ export default struct ChatPage {
             if (this.loading) {
               Row() {
                 Image($r("app.media.icon_ai"))
-                  .width(size.middlIconSize)
-                  .height(size.middlIconSize)
-                  .margin({ right: size.smallIconSize })
+                  .width(size.middleIcon)
+                  .height(size.middleIcon)
+                  .margin({ right: size.smallIcon })
                 Row() {
                   Image($r("app.media.icon_triangle"))
-                    .width(size.smallIconSize)
-                    .height(size.smallIconSize)
+                    .width(size.smallIcon)
+                    .height(size.smallIcon)
                     .alignSelf(ItemAlign.Start)
-                    .position({ x: -size.smallIconSize / 1.5, y: size.smallIconSize / 2 })
+                    .position({ x: -size.smallIcon / 1.5, y: size.smallIcon / 2 })
                   Column() {
                     if (!this.thinkContent && !this.responseContent) {
-                      Text("正在思考中").fontColor(colors.disableTextColor)
+                      Text("正在思考中").fontColor(colors.gray)
                     } else {
                       if (this.thinkContent) {
                         Text(this.thinkContent.replace(/^(<think>)[\s\s\n]?|(<\/think>[\s\S\n]?)$/gi, ""))
-                          .fontColor(colors.disableTextColor)
+                          .fontColor(colors.gray)
                       }
                       if (this.responseContent) {
                         MarkdownRenderer({markdownText:this.responseContent})
@@ -719,9 +719,9 @@ export default struct ChatPage {
                       }
                     }
                   }
-                }.backgroundColor(colors.blockColor)
-                .borderRadius(size.blockBorderRaduis)
-                .padding(size.pagePadding)
+                }.backgroundColor(colors.white)
+                .borderRadius(size.middleBorderRaduis)
+                .padding(size.middleGap)
                 .layoutWeight(1)
               }
               .width("100%")
@@ -732,39 +732,39 @@ export default struct ChatPage {
           .justifyContent(FlexAlign.Start)
           .alignItems(HorizontalAlign.Start)
         }
-        .padding(size.pagePadding)
+        .padding(size.middleGap)
         .align(Alignment.Top)
         .scrollable(ScrollDirection.Vertical)
         .layoutWeight(1)
         Scroll(){
-          Row({space:size.pagePadding}){
+          Row({space:size.middleGap}){
             Text("深度思考")
-              .fontColor(this.showThink ? colors.tabSelectedColor :colors.disableTextColor)
+              .fontColor(this.showThink ? colors.primary :colors.gray)
               .borderRadius(size.inputHeight)
               .border({
                 width:1,
-                color:this.showThink ? colors.tabSelectedColor :colors.disableTextColor,
+                color:this.showThink ? colors.primary :colors.gray,
                 style:BorderStyle.Solid
               })
               .padding({
-                top:size.smallPadding,
-                bottom:size.smallPadding,
-                left:size.pagePadding,
-                right:size.pagePadding
+                top:size.smallGap,
+                bottom:size.smallGap,
+                left:size.middleGap,
+                right:size.middleGap
               })
-              .backgroundColor(colors.blockColor)
+              .backgroundColor(colors.white)
               .onClick(()=>{
                 this.showThink = !this.showThink
               })
-            Row({space:size.smallPadding}){
+            Row({space:size.smallGap}){
               Text("知识库")
-                .fontColor(this.type == "document" ? colors.tabSelectedColor :colors.disableTextColor)
+                .fontColor(this.type == "document" ? colors.primary :colors.gray)
                 .onClick(()=>{
                   this.type = this.type === "document" ? "" : "document";
                 })
               Image(this.type === "document" ? $r("app.media.icon_setting_active") : $r("app.media.icon_setting_disabled"))
-                .width(size.smallIconSize)
-                .height(size.smallIconSize)
+                .width(size.smallIcon)
+                .height(size.smallIcon)
                 .onClick(()=>{
                   if(this.type !== "document"){
                     this.type = "document";
@@ -773,57 +773,57 @@ export default struct ChatPage {
                   }
                 })
             }
-            .backgroundColor(colors.blockColor)
+            .backgroundColor(colors.white)
             .borderRadius(size.inputHeight)
               .border({
                 width:1,
-                color:this.type == "document" ? colors.tabSelectedColor :colors.disableTextColor,
+                color:this.type == "document" ? colors.primary :colors.gray,
                 style:BorderStyle.Solid
               })
               .padding({
-                top:size.smallPadding,
-                bottom:size.smallPadding,
-                left:size.pagePadding,
-                right:size.pagePadding
+                top:size.smallGap,
+                bottom:size.smallGap,
+                left:size.middleGap,
+                right:size.middleGap
               })
 
             Text("查询数据库")
-              .fontColor(this.type == "db" ? colors.tabSelectedColor :colors.disableTextColor)
+              .fontColor(this.type == "db" ? colors.primary :colors.gray)
               .borderRadius(size.inputHeight)
               .border({
                 width:1,
-                color:this.type == "db" ? colors.tabSelectedColor :colors.disableTextColor,
+                color:this.type == "db" ? colors.primary :colors.gray,
                 style:BorderStyle.Solid
               })
-              .padding(size.smallPadding)
-              .backgroundColor(colors.blockColor)
+              .padding(size.smallGap)
+              .backgroundColor(colors.white)
               .onClick(()=>{
                 this.type = this.type === "db" ? "" : "db"
               })
-            Row({space:size.smallPadding}){
+            Row({space:size.smallGap}){
               Text(this.language == "zh" ? "中文" : "英文")
-              Image($r('app.media.icon_switch')).width(size.smallIconSize).height(size.smallPadding)
+              Image($r('app.media.icon_switch')).width(size.smallIcon).height(size.smallGap)
             }
-            .padding(size.smallPadding)
+            .padding(size.smallGap)
             .onClick(()=>{
               this.language = this.language == "zh" ? "en" : "zh";
             })
             .borderRadius(size.inputHeight)
             .border({
               width:1,
-              color: colors.tabNormalColor,
+              color: colors.black,
               style:BorderStyle.Solid
             })
           }
         }
-        .backgroundColor(colors.pageBackgroundColor)
-        .padding(size.pagePadding)
+        .backgroundColor(colors.pageBackground)
+        .padding(size.middleGap)
         .scrollable(ScrollDirection.Horizontal)
-        Row({ space: size.pagePadding }) {
+        Row({ space: size.middleGap }) {
           Image($r("app.media.icon_chat"))
             .opacity(size.opacity)
-            .width(size.middlIconSize)
-            .height(size.middlIconSize)
+            .width(size.middleIcon)
+            .height(size.middleIcon)
             .onClick(() => {
               this.chatId = "";
             })
@@ -832,7 +832,7 @@ export default struct ChatPage {
               text: this.prompt,
               placeholder: "有问题，尽管问"
             })
-              .height(size.middleAvaterSize)
+              .height(size.middleAvater)
               .layoutWeight(1)
               .backgroundColor(Color.Transparent)
               .onChange((value) => {
@@ -841,51 +841,51 @@ export default struct ChatPage {
 
             if (this.prompt) {
               Image($r('app.media.icon_clear'))
-                .width(size.smallIconSize)
-                .height(size.smallIconSize)
+                .width(size.smallIcon)
+                .height(size.smallIcon)
                 .onClick(() => {
                   this.prompt = '';
                 })
-                .margin({ right: size.pagePadding })
+                .margin({ right: size.middleGap })
                 .onClick(() => {
                   this.prompt = '';
                 })
             }
           }
-          .borderRadius(size.middleAvaterSize)
-          .backgroundColor(colors.pageBackgroundColor)
+          .borderRadius(size.middleAvater)
+          .backgroundColor(colors.pageBackground)
           .layoutWeight(1)
 
           Row() {
             if (this.loading) {
               Row()
-                .height(size.smallIconSize)
-                .width(size.smallIconSize)
-                .backgroundColor(colors.disableTextColor)
+                .height(size.smallIcon)
+                .width(size.smallIcon)
+                .backgroundColor(colors.gray)
                 .borderRadius(size.smallBorderRaduis / 2)
             } else {
               Image($r("app.media.icon_send"))
                 .opacity(size.opacity)
-                .width(size.middlIconSize)
-                .height(size.middlIconSize)
+                .width(size.middleIcon)
+                .height(size.middleIcon)
                 .onClick(this.onSend)
             }
 
           }
-          .width(size.middleAvaterSize)
-          .height(size.middleAvaterSize)
-          .borderRadius(size.middleAvaterSize)
-          .backgroundColor(colors.pageBackgroundColor)
+          .width(size.middleAvater)
+          .height(size.middleAvater)
+          .borderRadius(size.middleAvater)
+          .backgroundColor(colors.pageBackground)
           .alignItems(VerticalAlign.Center)
           .justifyContent(FlexAlign.Center)
         }
-        .backgroundColor(colors.blockColor)
-        .padding(size.pagePadding)
+        .backgroundColor(colors.white)
+        .padding(size.middleGap)
         .alignItems(VerticalAlign.Center)
       }
       .width('100%')
       .height('100%')
-      .backgroundColor(colors.pageBackgroundColor)
+      .backgroundColor(colors.pageBackground)
 
     }.width("100%").height("100%")
   }

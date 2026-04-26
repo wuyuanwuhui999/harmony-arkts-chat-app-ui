@@ -36,11 +36,11 @@ struct RegisterPage {
 
   @Styles
   blockStyle(){
-    .backgroundColor(colors.blockColor)
-    .borderRadius(size.blockBorderRaduis)
-    .padding(size.pagePadding)
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .padding(size.middleGap)
     .width('100%')
-    .margin({ top: size.pagePadding })
+    .margin({ top: size.middleGap })
   }
 
   @Styles
@@ -136,7 +136,7 @@ struct RegisterPage {
           Column() {
             Row() {
               Row() {
-                Text("*").fontColor(colors.warnColor)
+                Text("*").fontColor(colors.warn)
                 Text("账号:")
               }.width('20%')
 
@@ -166,7 +166,7 @@ struct RegisterPage {
 
             Row() {
               Row() {
-                Text("*").fontColor(colors.warnColor)
+                Text("*").fontColor(colors.warn)
                 Text("密码:")
               }.width('20%')
 
@@ -180,11 +180,11 @@ struct RegisterPage {
                 .onBlur(() => {
                   this.verify(this.userData.password, '密码')
                 })
-            }.margin({ top: size.pagePadding })
+            }.margin({ top: size.middleGap })
 
             Row() {
               Row() {
-                Text("*").fontColor(colors.warnColor)
+                Text("*").fontColor(colors.warn)
                 Text("确认密码:")
               }.width('20%')
 
@@ -198,11 +198,11 @@ struct RegisterPage {
                 .onBlur(() => {
                   this.verify(this.comfirmPassword, '确认密码');
                 })
-            }.margin({ top: size.pagePadding })
+            }.margin({ top: size.middleGap })
 
             Row() {
               Row() {
-                Text("*").fontColor(colors.warnColor)
+                Text("*").fontColor(colors.warn)
                 Text("昵称:")
               }.width('20%')
 
@@ -213,7 +213,7 @@ struct RegisterPage {
                 }).onBlur(() => {
                 this.verify(this.userData.username, '昵称');
               })
-            }.margin({ top: size.pagePadding })
+            }.margin({ top: size.middleGap })
 
             Row() {
               Row() {
@@ -224,8 +224,8 @@ struct RegisterPage {
                 placeholder: "请选择性别",
                 text: this.userData.sex,
                 controller: this.birthdayController
-              }).fontColor(colors.tabNormalColor).enabled(false).inputStyle()
-            }.margin({ top: size.pagePadding }).onClick(() => {
+              }).fontColor(colors.black).enabled(false).inputStyle()
+            }.margin({ top: size.middleGap }).onClick(() => {
               this.useShowDialog()
             })
 
@@ -241,11 +241,11 @@ struct RegisterPage {
               })
                 .enabled(false)
                 .inputStyle()
-                .fontColor(colors.tabNormalColor)
+                .fontColor(colors.black)
                 .onChange((value) => {
                   this.userData.birthday = value;
                 })
-            }.margin({ top: size.pagePadding }).onClick(() => {
+            }.margin({ top: size.middleGap }).onClick(() => {
               DatePickerDialog.show({
                 start: new Date("1970-1-1"),
                 end: new Date("2100-12-31"),
@@ -266,11 +266,11 @@ struct RegisterPage {
                 .onChange((value) => {
                   this.userData.telephone = value;
                 })
-            }.margin({ top: size.pagePadding })
+            }.margin({ top: size.middleGap })
 
             Row() {
               Row() {
-                Text("*").fontColor(colors.warnColor)
+                Text("*").fontColor(colors.warn)
                 Text("邮箱:")
               }.width('20%')
 
@@ -295,7 +295,7 @@ struct RegisterPage {
                   }).finally(() => this.loading = false);
                 }
               })
-            }.margin({ top: size.pagePadding })
+            }.margin({ top: size.middleGap })
 
             Row() {
               Row() {
@@ -307,7 +307,7 @@ struct RegisterPage {
                 .onChange((value) => {
                   this.userData.region = value;
                 })
-            }.margin({ top: size.pagePadding })
+            }.margin({ top: size.middleGap })
 
             Row() {
               Row() {
@@ -319,30 +319,30 @@ struct RegisterPage {
                 .onChange((value) => {
                   this.userData.sign = value;
                 })
-            }.margin({ top: size.pagePadding })
+            }.margin({ top: size.middleGap })
 
           }.blockStyle()
 
           Text('注册')
             .width('100%')
-            .padding(size.pagePadding)
+            .padding(size.middleGap)
             .textAlign(TextAlign.Center)
-            .backgroundColor(colors.warnColor)
-            .margin({ top: size.pagePadding })
+            .backgroundColor(colors.warn)
+            .margin({ top: size.middleGap })
             .fontColor(Color.White)
-            .borderRadius(size.blockBorderRaduis * 2)
+            .borderRadius(size.middleBorderRaduis * 2)
             .onClick(this.useRegister)
         }.justifyContent(FlexAlign.Start)
       }
       .align(Alignment.Top)
       .scrollable(ScrollDirection.Vertical)
       .layoutWeight(1)
-      .padding({ left: size.pagePadding, right: size.pagePadding })
+      .padding({ left: size.middleGap, right: size.middleGap })
 
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(colors.pageBackgroundColor)
+    .backgroundColor(colors.pageBackground)
   }
 
   useShowDialog() {

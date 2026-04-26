@@ -27,11 +27,11 @@ struct TenantManagerPage {
   deleteIndex:number = -1;
   pageNum:number = 1;
   @Styles blockStyle(){
-    .backgroundColor(colors.blockColor)
-    .borderRadius(size.blockBorderRaduis)
-    .padding(size.pagePadding)
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .padding(size.middleGap)
     .width('100%')
-    .margin({ top: size.pagePadding })
+    .margin({ top: size.middleGap })
   }
 
   aboutToAppear(): void {
@@ -55,7 +55,7 @@ struct TenantManagerPage {
     .justifyContent(FlexAlign.Center)
     .width(80)
     .height('100%')
-    .backgroundColor(((tenantUser.roleType ==1 && this.tenantUser.roleType === 2 || tenantUser.roleType === 0 ) && tenantUser.userId !== this.userData.id) ? colors.warnColor : colors.disableTextColor)
+    .backgroundColor(((tenantUser.roleType ==1 && this.tenantUser.roleType === 2 || tenantUser.roleType === 0 ) && tenantUser.userId !== this.userData.id) ? colors.warn : colors.gray)
     .onClick(() => {
       this.deleteIndex = index;
       this.dialogController = new CustomDialogController({
@@ -123,8 +123,8 @@ struct TenantManagerPage {
   @Builder
   AddIcon() {
     Image($r('app.media.icon_add'))
-      .width(size.smallIconSize)
-      .height(size.smallIconSize)
+      .width(size.smallIcon)
+      .height(size.smallIcon)
       .onClick(() => {
         this.dialogController = new CustomDialogController({
           customStyle: true,
@@ -171,21 +171,21 @@ struct TenantManagerPage {
     Column() {
       Row() {
         Blank()
-          .width(size.smallIconSize)
-          .height(size.smallIconSize)
-          .margin({left:size.smallIconSize})
+          .width(size.smallIcon)
+          .height(size.smallIcon)
+          .margin({left:size.smallIcon})
         Text('添加用户')
-          .padding(size.pagePadding)
+          .padding(size.middleGap)
           .textAlign(TextAlign.Center)
           .layoutWeight(1)
         Image($r("app.media.icon_close"))
-          .width(size.normalFontSize)
-          .height(size.normalFontSize)
+          .width(size.middleFont)
+          .height(size.middleFont)
           .opacity(0.5)
           .onClick(() => {
             this.dialogController?.close()
           })
-          .margin({ right: size.pagePadding })
+          .margin({ right: size.middleGap })
       }
       .justifyContent(FlexAlign.Center)
       .border({
@@ -202,7 +202,7 @@ struct TenantManagerPage {
               placeholder: "请输入用户姓名/工号/电话/邮箱",
               text:this.keyword
             })
-              .height(size.middleAvaterSize)
+              .height(size.middleAvater)
               .layoutWeight(1)
               .backgroundColor(Color.Transparent)
               .onChange((value) => {
@@ -210,17 +210,17 @@ struct TenantManagerPage {
               }).layoutWeight(1)
             if(this.keyword){
               Image($r("app.media.icon_clear"))
-                .margin({left:size.smallPadding})
-                .width(size.smallIconSize)
-                .height(size.smallIconSize)
+                .margin({left:size.smallGap})
+                .width(size.smallIcon)
+                .height(size.smallIcon)
                 .onClick(()=>{
                   this.keyword = ""
                 })
             }
             Image($r("app.media.icon_search"))
-              .margin({left:size.smallPadding,right:size.pagePadding})
-              .width(size.smallIconSize)
-              .height(size.smallIconSize)
+              .margin({left:size.smallGap,right:size.middleGap})
+              .width(size.smallIcon)
+              .height(size.smallIcon)
               .onClick(()=>{
                 this.pageNum = 1;
                 this.searchUserList = [];
@@ -233,25 +233,25 @@ struct TenantManagerPage {
                 })
               })
           }
-          .backgroundColor(colors.pageBackgroundColor)
-          .borderRadius(size.bigAvaterSize)
+          .backgroundColor(colors.pageBackground)
+          .borderRadius(size.bigAvater)
           .width("100%")
           .alignItems(VerticalAlign.Center)
         }.blockStyle()
         Column(){
           if(this.searchUserList.length === 0){
-            Text("暂无数据").padding({top:size.pagePadding,bottom:size.pagePadding}).textAlign(TextAlign.Center)
+            Text("暂无数据").padding({top:size.middleGap,bottom:size.middleGap}).textAlign(TextAlign.Center)
           }else {
             ForEach(this.searchUserList,(item:UserWithChecked,index:number)=>{
               Column(){
                 Row(){
                   Row(){
-                    AvaterComponent({dimensions:size.middlIconSize,avater:item.avater})
-                      .margin({right:size.pagePadding})
+                    AvaterComponent({dimensions:size.middleIcon,avater:item.avater})
+                      .margin({right:size.middleGap})
                     Text(item.username).layoutWeight(1)
                     Image(item.checked ? $r('app.media.icon_add_tenant_active') : $r('app.media.icon_add_tenant'))
-                      .width(size.smallIconSize)
-                      .height(size.smallIconSize)
+                      .width(size.smallIcon)
+                      .height(size.smallIcon)
                       .onClick(()=>{
                         this.onAddTenantUser(index);
                       })
@@ -261,25 +261,25 @@ struct TenantManagerPage {
                       bottom: 1,
                     },
                     color: {
-                      bottom: index === this.searchUserList.length - 1 ? Color.Transparent :colors.pageBackgroundColor
+                      bottom: index === this.searchUserList.length - 1 ? Color.Transparent :colors.pageBackground
                     },
                     style: {
                       bottom: BorderStyle.Solid
                     }
                   })
-                  .padding({top:index === 0 ? 0 : size.pagePadding,bottom:index === this.searchUserList.length -1 ? 0 : size.pagePadding})
+                  .padding({top:index === 0 ? 0 : size.middleGap,bottom:index === this.searchUserList.length -1 ? 0 : size.middleGap})
 
                 }
               }
             })
           }
-        }.blockStyle().margin({bottom:size.pagePadding,top:size.pagePadding})
+        }.blockStyle().margin({bottom:size.middleGap,top:size.middleGap})
       }
     }
-    .backgroundColor(colors.pageBackgroundColor)
+    .backgroundColor(colors.pageBackground)
     .padding({
-      left: size.pagePadding,
-      right: size.pagePadding,
+      left: size.middleGap,
+      right: size.middleGap,
     })
     .layoutWeight(1)
     .align(Alignment.TopStart)
@@ -306,8 +306,8 @@ struct TenantManagerPage {
           ForEach(this.tenantUserList,(item:TenantUserType,index:number)=>{
             ListItem(){
               Row(){
-                AvaterComponent({dimensions:size.middlIconSize,avater:item.avater})
-                  .margin({right:size.pagePadding})
+                AvaterComponent({dimensions:size.middleIcon,avater:item.avater})
+                  .margin({right:size.middleGap})
                 Text(item.username).layoutWeight(1)
               }
               .border({
@@ -315,13 +315,13 @@ struct TenantManagerPage {
                   bottom: 1,
                 },
                 color: {
-                  bottom: index === this.tenantUserList.length - 1 ? Color.Transparent :colors.pageBackgroundColor
+                  bottom: index === this.tenantUserList.length - 1 ? Color.Transparent :colors.pageBackground
                 },
                 style: {
                   bottom: BorderStyle.Solid
                 }
               })
-              .padding({top:index === 0 ? 0 : size.pagePadding,bottom:index === this.tenantUserList.length -1 ? 0 : size.pagePadding})
+              .padding({top:index === 0 ? 0 : size.middleGap,bottom:index === this.tenantUserList.length -1 ? 0 : size.middleGap})
             }.swipeAction({
               end: () => {
                 return this.DeleteButton(item,index)
@@ -331,11 +331,11 @@ struct TenantManagerPage {
           })
         }
         .blockStyle()
-        .margin(size.pagePadding)
+        .margin(size.middleGap)
         .width("auto")
       }
       .layoutWeight(1)
-      .backgroundColor(colors.pageBackgroundColor)
+      .backgroundColor(colors.pageBackground)
       .scrollable(ScrollDirection.Vertical)
       .align(Alignment.Top)
     }

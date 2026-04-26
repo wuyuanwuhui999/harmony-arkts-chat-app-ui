@@ -21,11 +21,11 @@ struct ResetPasswordPage {
 
   @Styles
   blockStyle(){
-    .backgroundColor(colors.blockColor)
-    .borderRadius(size.blockBorderRaduis)
-    .padding(size.pagePadding)
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .padding(size.middleGap)
     .width('100%')
-    .margin({ top: size.pagePadding })
+    .margin({ top: size.middleGap })
   }
 
   @Styles
@@ -35,14 +35,14 @@ struct ResetPasswordPage {
         bottom: 1,
       },
       color: {
-        bottom: colors.pageBackgroundColor
+        bottom: colors.pageBackground
       },
       style: {
         bottom: BorderStyle.Solid
       }
     })
     .width('100%')
-    .padding({ top: size.pagePadding, bottom: size.pagePadding })
+    .padding({ top: size.middleGap, bottom: size.middleGap })
   }
 
   verify(value: string, title: string) {
@@ -115,9 +115,9 @@ struct ResetPasswordPage {
     Column() {
       NavigatorTitleComponent({ title: "重置密码" })
       Column() {
-        Column({ space: size.pagePadding }) {
+        Column({ space: size.middleGap }) {
           Row() {
-            Text("*").fontColor(colors.warnColor)
+            Text("*").fontColor(colors.warn)
             TextInput({ placeholder: "请输入验证码" })
               .layoutWeight(1)
               .backgroundColor(Color.Transparent)
@@ -126,9 +126,9 @@ struct ResetPasswordPage {
               })
           }
 
-          Divider().height(size.pagePadding).color(colors.borderColor)
+          Divider().height(size.middleGap).color(colors.borderColor)
           Row() {
-            Text("*").fontColor(colors.warnColor)
+            Text("*").fontColor(colors.warn)
             TextInput({ placeholder: "请输入密码" })
               .layoutWeight(1)
               .type(InputType.Password)
@@ -138,9 +138,9 @@ struct ResetPasswordPage {
               })
           }
 
-          Divider().height(size.pagePadding).color(colors.borderColor)
+          Divider().height(size.middleGap).color(colors.borderColor)
           Row() {
-            Text("*").fontColor(colors.warnColor)
+            Text("*").fontColor(colors.warn)
             TextInput({ placeholder: "请输入确认密码" })
               .layoutWeight(1)
               .type(InputType.Password)
@@ -154,19 +154,19 @@ struct ResetPasswordPage {
 
         Text('提交')
           .width('100%')
-          .padding(size.pagePadding)
+          .padding(size.middleGap)
           .textAlign(TextAlign.Center)
-          .backgroundColor(colors.warnColor)
-          .margin({ top: size.pagePadding })
+          .backgroundColor(colors.warn)
+          .margin({ top: size.middleGap })
           .fontColor(Color.White)
-          .borderRadius(size.blockBorderRaduis * 2)
+          .borderRadius(size.middleBorderRaduis * 2)
           .onClick(this.useSumbit)
 
       }
       .width('100%')
       .height('100%')
-      .padding({ left: size.pagePadding, right: size.pagePadding })
-      .backgroundColor(colors.pageBackgroundColor)
+      .padding({ left: size.middleGap, right: size.middleGap })
+      .backgroundColor(colors.pageBackground)
     }
   }
 }

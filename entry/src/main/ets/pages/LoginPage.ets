@@ -31,11 +31,11 @@ struct LoginPage {
 
   @Styles
   blockStyle(){
-    .backgroundColor(colors.blockColor)
-    .borderRadius(size.blockBorderRaduis)
-    .padding(size.pagePadding)
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .padding(size.middleGap)
     .width('100%')
-    .margin({ top: size.pagePadding })
+    .margin({ top: size.middleGap })
   }
 
   @Styles
@@ -45,14 +45,14 @@ struct LoginPage {
         bottom: 1,
       },
       color: {
-        bottom: colors.pageBackgroundColor
+        bottom: colors.pageBackground
       },
       style: {
         bottom: BorderStyle.Solid
       }
     })
     .width('100%')
-    .padding({ top: size.pagePadding, bottom: size.pagePadding })
+    .padding({ top: size.middleGap, bottom: size.middleGap })
   }
 
   useLogin = () => {
@@ -138,9 +138,9 @@ struct LoginPage {
       GlobalLoading({ controller: this.loadingController })
       Column() {
         Image($r("app.media.icon_ai"))
-          .width(size.bigIconSize * 3)
-          .height(size.bigIconSize * 3)
-          .margin({ top: size.pagePadding * 2, bottom: size.pagePadding * 2 })
+          .width(size.bigIcon * 3)
+          .height(size.bigIcon * 3)
+          .margin({ top: size.middleGap * 2, bottom: size.middleGap * 2 })
         Row() {
           Row() {
             Text("账号密码登录").border({
@@ -148,7 +148,7 @@ struct LoginPage {
                 bottom: 2,
               },
               color: {
-                bottom: this.activeIndex === 0 ? colors.tabSelectedColor : colors.pageBackgroundColor
+                bottom: this.activeIndex === 0 ? colors.primary : colors.pageBackground
               },
               style: {
                 bottom: BorderStyle.Solid
@@ -167,7 +167,7 @@ struct LoginPage {
                 bottom: 2,
               },
               color: {
-                bottom: this.activeIndex === 1 ? colors.tabSelectedColor : colors.blockColor
+                bottom: this.activeIndex === 1 ? colors.primary : colors.white
               },
               style: {
                 bottom: BorderStyle.Solid
@@ -178,15 +178,15 @@ struct LoginPage {
           .onClick(() => {
             this.activeIndex = 1
           })
-        }.margin({ bottom: size.pagePadding })
+        }.margin({ bottom: size.middleGap })
 
         if (this.activeIndex === 0) {
           Column() {
             Row() {
               Image($r('app.media.icon_user_active'))
-                .width(size.smallIconSize)
-                .height(size.smallIconSize)
-                .margin({ left: size.smallPadding, right: size.smallPadding })
+                .width(size.smallIcon)
+                .height(size.smallIcon)
+                .margin({ left: size.smallGap, right: size.smallGap })
               TextInput({ placeholder: "请输入账号或邮箱", text: this.userAccount })
                 .layoutWeight(1)
                 .backgroundColor(Color.Transparent)
@@ -196,19 +196,19 @@ struct LoginPage {
             }
             .alignItems(VerticalAlign.Center)
             .width('100%')
-            .padding(size.smallPadding)
+            .padding(size.smallGap)
             .border({
               width: 1,
-              color: colors.pageBackgroundColor,
+              color: colors.pageBackground,
               style: BorderStyle.Solid
             })
-            .borderRadius(size.blockBorderRaduis * 2)
+            .borderRadius(size.middleBorderRaduis * 2)
 
             Row() {
               Image($r('app.media.icon_password'))
-                .width(size.smallIconSize)
-                .height(size.smallIconSize)
-                .margin({ left: size.smallPadding, right: size.smallPadding })
+                .width(size.smallIcon)
+                .height(size.smallIcon)
+                .margin({ left: size.smallGap, right: size.smallGap })
               TextInput({ placeholder: "请输入密码", text: this.password })
                 .type(InputType.Password)
                 .layoutWeight(1)
@@ -219,22 +219,22 @@ struct LoginPage {
             }
             .alignItems(VerticalAlign.Center)
             .width('100%')
-            .margin({ top: size.pagePadding })
-            .padding(size.smallPadding)
+            .margin({ top: size.middleGap })
+            .padding(size.smallGap)
             .border({
               width: 1,
-              color: colors.pageBackgroundColor,
+              color: colors.pageBackground,
               style: BorderStyle.Solid
             })
-            .borderRadius(size.blockBorderRaduis * 2)
+            .borderRadius(size.middleBorderRaduis * 2)
           }
         } else {
           Column() {
             Row() {
               Image($r('app.media.icon_user_active'))
-                .width(size.smallIconSize)
-                .height(size.smallIconSize)
-                .margin({ left: size.smallPadding, right: size.smallPadding })
+                .width(size.smallIcon)
+                .height(size.smallIcon)
+                .margin({ left: size.smallGap, right: size.smallGap })
               TextInput({ placeholder: "请输入邮箱地址", text: this.email })
                 .layoutWeight(1)
                 .backgroundColor(Color.Transparent)
@@ -242,9 +242,9 @@ struct LoginPage {
                   this.email = value;
                 })
               Image($r('app.media.icon_send'))
-                .width(size.smallIconSize)
-                .height(size.smallIconSize)
-                .margin({ left: size.smallPadding, right: size.smallPadding })
+                .width(size.smallIcon)
+                .height(size.smallIcon)
+                .margin({ left: size.smallGap, right: size.smallGap })
                 .onClick(() => {
                   if (strictEmailRegex.test(this.email)) {
                     sendEmailVertifyCodeService(this.email).then((res) => {
@@ -265,19 +265,19 @@ struct LoginPage {
             }
             .alignItems(VerticalAlign.Center)
             .width('100%')
-            .padding(size.smallPadding)
+            .padding(size.smallGap)
             .border({
               width: 1,
-              color: colors.pageBackgroundColor,
+              color: colors.pageBackground,
               style: BorderStyle.Solid
             })
-            .borderRadius(size.blockBorderRaduis * 2)
+            .borderRadius(size.middleBorderRaduis * 2)
 
             Row() {
               Image($r('app.media.icon_password'))
-                .width(size.smallIconSize)
-                .height(size.smallIconSize)
-                .margin({ left: size.smallPadding, right: size.smallPadding })
+                .width(size.smallIcon)
+                .height(size.smallIcon)
+                .margin({ left: size.smallGap, right: size.smallGap })
               TextInput({ placeholder: "请输入验证码", text: '' })
                 .layoutWeight(1)
                 .backgroundColor(Color.Transparent)
@@ -287,40 +287,40 @@ struct LoginPage {
             }
             .alignItems(VerticalAlign.Center)
             .width('100%')
-            .margin({ top: size.pagePadding })
-            .padding(size.smallPadding)
+            .margin({ top: size.middleGap })
+            .padding(size.smallGap)
             .border({
               width: 1,
-              color: colors.pageBackgroundColor,
+              color: colors.pageBackground,
               style: BorderStyle.Solid
             })
-            .borderRadius(size.blockBorderRaduis * 2)
+            .borderRadius(size.middleBorderRaduis * 2)
           }
         }
 
 
         Text('登录')
           .width('100%')
-          .padding(size.pagePadding)
+          .padding(size.middleGap)
           .textAlign(TextAlign.Center)
-          .backgroundColor(colors.warnColor)
-          .margin({ top: size.pagePadding })
+          .backgroundColor(colors.warn)
+          .margin({ top: size.middleGap })
           .fontColor(Color.White)
-          .borderRadius(size.blockBorderRaduis * 2)
+          .borderRadius(size.middleBorderRaduis * 2)
           .onClick(this.useLogin)
 
         Text('注册')
-          .padding(size.smallPadding)
+          .padding(size.smallGap)
           .border({
             width: 1,
             color: colors.borderColor,
             style: BorderStyle.Solid
           })
-          .borderRadius(size.blockBorderRaduis * 2)
+          .borderRadius(size.middleBorderRaduis * 2)
           .width('100%')
-          .padding(size.pagePadding)
+          .padding(size.middleGap)
           .textAlign(TextAlign.Center)
-          .margin({ top: size.pagePadding })
+          .margin({ top: size.middleGap })
           .onClick(() => {
             router.replaceUrl({
               url: 'pages/RegisterPage', // 目标url
@@ -333,17 +333,17 @@ struct LoginPage {
           })
 
         Text('忘记密码')
-          .padding(size.smallPadding)
+          .padding(size.smallGap)
           .border({
             width: 1,
             color: colors.borderColor,
             style: BorderStyle.Solid
           })
-          .borderRadius(size.blockBorderRaduis * 2)
+          .borderRadius(size.middleBorderRaduis * 2)
           .width('100%')
-          .padding(size.pagePadding)
+          .padding(size.middleGap)
           .textAlign(TextAlign.Center)
-          .margin({ top: size.pagePadding })
+          .margin({ top: size.middleGap })
           .onClick(() => {
             router.pushUrl({
               url: 'pages/ForgetPasswordPage', // 目标url
@@ -357,14 +357,14 @@ struct LoginPage {
       }
       .alignItems(HorizontalAlign.Center)
       .blockStyle()
-      .padding({ top: 0, left: size.pagePadding, right: size.pagePadding })
+      .padding({ top: 0, left: size.middleGap, right: size.middleGap })
       .flexGrow(1)
 
-      Divider().height(size.pagePadding).color(Color.Transparent)
+      Divider().height(size.middleGap).color(Color.Transparent)
     }
     .width('100%')
     .height('100%')
-    .padding({ left: size.pagePadding, right: size.pagePadding })
-    .backgroundColor(colors.pageBackgroundColor)
+    .padding({ left: size.middleGap, right: size.middleGap })
+    .backgroundColor(colors.pageBackground)
   }
 }

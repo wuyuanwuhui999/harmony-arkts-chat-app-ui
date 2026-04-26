@@ -13,9 +13,9 @@ export default struct BottomDialogComponent {
     Column(){
       this.builder()
     }
-    .borderRadius({topLeft:size.blockBorderRaduis,topRight:size.blockBorderRaduis})
+    .borderRadius({topLeft:size.middleBorderRaduis,topRight:size.middleBorderRaduis})
     .height(this.dialogHeight)
     .width('100%')
-    .backgroundColor(colors.blockColor)
+    .backgroundColor(colors.white)
   }
 }

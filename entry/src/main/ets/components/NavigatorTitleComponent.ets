@@ -12,8 +12,8 @@ export default struct NavigatorTitleComponent {
     Row() {
       // 左侧返回图标
       Image($r('app.media.icon_back'))
-        .width(size.smallIconSize)
-        .height(size.smallIconSize)
+        .width(size.smallIcon)
+        .height(size.smallIcon)
         .opacity(size.opacity)
         .onClick(() => {
           router.back()
@@ -32,13 +32,13 @@ export default struct NavigatorTitleComponent {
         this.rightContent()
       } else {
         Image($r('app.media.icon_back'))
-          .width(size.smallIconSize)
-          .height(size.smallIconSize)
+          .width(size.smallIcon)
+          .height(size.smallIcon)
           .visibility(Visibility.Hidden)
       }
     }
     .width('100%')
-    .padding(size.pagePadding)
-    .backgroundColor(colors.blockColor)
+    .padding(size.middleGap)
+    .backgroundColor(colors.white)
   }
 }
