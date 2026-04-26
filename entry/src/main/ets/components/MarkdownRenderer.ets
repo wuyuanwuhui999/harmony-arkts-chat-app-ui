@@ -1,6 +1,12 @@
 // MarkdownTypes.ets - 类型定义
+// 定义标题类型
+type HeaderType = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
+
+// 定义所有元素类型
+type ElementType = HeaderType | 'paragraph' | 'list' | 'quote' | 'code' | 'divider'
+
 interface MarkdownElement {
-  type: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'paragraph' | 'list' | 'quote' | 'code' | 'divider'
+  type: ElementType
   content: string
   level?: number
   items?: string[]
@@ -70,7 +76,8 @@ class MarkdownParser {
         }
         const level = headerMatch[1].length
         const content = headerMatch[2]
-        const headerType: MarkdownElement['type'] = `h${level}` as MarkdownElement['type']
+        // 修改点：使用类型断言将字符串转换为 HeaderType
+        const headerType = `h${level}` as HeaderType
         elements.push({
           type: headerType,
           content,
