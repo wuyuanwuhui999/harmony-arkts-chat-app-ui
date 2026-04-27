@@ -12,10 +12,18 @@ import {
   UserDataType,
   TenantUserType,
   DirectoryType,
-  DocumentCheckType
+  DocumentCheckType,
+  PromptInterface
 } from '../type/Index';
-import { getModelListService, getChatHistoryService,getMyDocumentService,deleteMyDocumentService, getTenantUserService,
-  getDirectoryListService} from '../service/Index';
+import {
+  getModelListService,
+  getChatHistoryService,
+  getMyDocumentService,
+  deleteMyDocumentService,
+  getTenantUserService,
+  getDirectoryListService,
+  getPromptService
+} from '../service/Index';
 import { PositionEnum } from '../common/enum';
 import AvaterComponent from "../components/AvaterComponent";
 import { HOST, PAGE_SIZE, USER_DATA, DEFAULT_TENANT_USER,TENANT_USER_DATA} from '../common/constant';
@@ -59,12 +67,16 @@ export default struct ChatPage {
   @State type:string = "";
   @State language:string = "zh";
   @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
-  @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
   @State directoryList:Array<DirectoryType> = [];
   @State checkedDocIds:string[]=[];
   private message: string = "";
   private dialogController: CustomDialogController | null = null
   private ws: webSocket.WebSocket | null = null;
+  @State promptData: PromptInterface | null = null; // 提示词数据
+  @State defaultPrompt: string = "请你自我介绍一下"; // 默认提示词
+
+  @Watch('onTenantUserChange')
+  @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
 
   @Styles
   blockStyle(){
@@ -75,12 +87,25 @@ export default struct ChatPage {
     .margin({ top: size.middleGap })
   }
 
+  /**
+   * @author: system
+   * @description: 监听租户变化，重新加载提示词
+   * @date: 2026-04-27
+   */
+  async onTenantUserChange() {
+    if (this.tenantUser && (this.tenantUser.tenantId || this.tenantUser.id)) {
+      await this.getPrompt();
+    }
+  }
+
   async aboutToAppear() {
     await this.getStorageTenant();
     getModelListService().then((res) => {
       this.modelList = res.data;
       this.activeModelName = res.data[0].modelName;
     })
+    // 在租户信息加载完成后获取提示词
+    await this.getPrompt();
   }
 
   aboutToDisappear() {
@@ -197,21 +222,30 @@ export default struct ChatPage {
    * @description: 获取租户i
    * @date: 2025-8-10 18:06
    */
-  getStorageTenant = ():Promise<void>=>{
-    return preference.getTenantId(this.userData.id!).then(async (res)=>{
-      if(res !== undefined && res !== null && res !== ""){
-        await getTenantUserService(res).then((respone)=>{
-          if(respone.data){
-            AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,respone.data as TenantUserType);
-          }else{
-            AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,this.getDefaultTenantUser());
+  /**
+   * @author: wuwenqiang
+   * @description: 获取租户信息
+   * @date: 2025-8-10 18:06
+   */
+  getStorageTenant = (): Promise<void> => {
+    return preference.getTenantId(this.userData.id!).then(async (res) => {
+      if (res !== undefined && res !== null && res !== "") {
+        await getTenantUserService(res).then((respone) => {
+          if (respone.data) {
+            AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, respone.data as TenantUserType);
+          } else {
+            AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
           }
         })
-      }else{
-        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,this.getDefaultTenantUser());
+      } else {
+        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
       }
-    }).catch(()=>{
-      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA,this.getDefaultTenantUser());
+      // 租户切换后重新加载提示词
+      await this.getPrompt();
+    }).catch(() => {
+      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
+      // 租户切换后重新加载提示词
+      this.getPrompt();
     });
   }
 
@@ -339,6 +373,33 @@ export default struct ChatPage {
 
   onCancel(){
     this.dialogController?.close()
+  }
+
+  /**
+   * @author: system
+   * @description: 获取提示词
+   * @date: 2026-04-27
+   */
+  getPrompt = async (): Promise<void> => {
+    const tenantId = this.tenantUser.tenantId || this.tenantUser.id;
+    if (!tenantId) {
+      console.warn('获取提示词失败：租户ID为空');
+      return;
+    }
+
+    try {
+      const res = await getPromptService(tenantId);
+      if (res.data && res.data.prompt) {
+        this.promptData = res.data;
+        this.prompt = res.data.prompt; // 将提示词设置到输入框
+      } else {
+        // 如果没有提示词，使用默认提示词
+        this.prompt = this.defaultPrompt;
+      }
+    } catch (error) {
+      console.error('获取提示词失败:', JSON.stringify(error));
+      this.prompt = this.defaultPrompt;
+    }
   }
 
   /**

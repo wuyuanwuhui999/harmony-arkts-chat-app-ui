@@ -232,3 +232,13 @@ export interface DocumentCheckType{
   directoryId:string;
   docList:DocumentType[]
 }
+
+// 提示词接口
+export interface PromptInterface {
+  id: string;
+  tenantId: string;
+  userId: string;
+  prompt: string;
+  createTime?: string;
+  updateTime?: string;
+}

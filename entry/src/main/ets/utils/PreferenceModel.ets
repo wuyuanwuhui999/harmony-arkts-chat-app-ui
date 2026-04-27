@@ -88,6 +88,7 @@ class PreferenceModel {
 
   // 写入 token
   async setToken(token: string) {
+    if(!/^Bearer\s/.test(token))token = `Bearer ${token}`
     await this.putPreference('token', token);
   }
 

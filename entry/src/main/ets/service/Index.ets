@@ -227,3 +227,12 @@ export const deleteAdminService = (tenantId:string,userId:string):Promise<types.
 export const deleteTenantUserService = (tenantId:string,userId:string):Promise<types.MyAwesomeData<boolean>> => {
   return httpRequest.delete<boolean>(`${api.deleteTenantUser}/${tenantId}/${userId}`);
 }
+
+/**
+ * @description: 获取提示词
+ * @date: 2026-04-27
+ * @author: system
+ */
+export const getPromptService = (tenantId: string): Promise<types.MyAwesomeData<types.PromptInterface>> => {
+  return httpRequest.get<types.PromptInterface>(`${api.getPrompt}?tenantId=${tenantId}`);
+}

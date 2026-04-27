@@ -34,6 +34,7 @@ class HttpRequest {
    * ```
    */
   public setToken(token: string) {
+    if(!/^Bearer\s/.test(token))token = `Bearer ${token}`
     this.token = token;
   }
 
@@ -46,7 +47,6 @@ class HttpRequest {
 
   // 服务器接口请求
   public request<T>(url: string, options: http.HttpRequestOptions): Promise<MyAwesomeData<T>> {
-
     const defaultOptions: http.HttpRequestOptions = {
       extraData: undefined,
       method: http.RequestMethod.GET,
@@ -54,7 +54,7 @@ class HttpRequest {
       readTimeout: 10000,
       header: {
         "content-type": "application/json",
-        "Authorization": `Bearer ${this.token}`
+        "Authorization": !/^Bearer\s/.test(this.token) ? `Bearer ${this.token}` : this.token
       }
     }
     // 手动合并对象
