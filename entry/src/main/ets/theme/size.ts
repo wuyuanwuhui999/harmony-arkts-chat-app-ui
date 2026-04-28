@@ -23,5 +23,5 @@ export const dialogBtnHeight:number = 60;
 export const btnWidth:number = 100;
 export const inputHeight:number = 40;
 export const popupMenuWidth:number = 200;
-
+export const textareaHeight:number = 300;
 export const opacity:number = 0.5;

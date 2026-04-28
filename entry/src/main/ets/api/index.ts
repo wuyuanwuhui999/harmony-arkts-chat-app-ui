@@ -30,4 +30,6 @@ export default {
   deleteAdmin:"/service/tenant/deleteAdmin",// 取消管理员
   deleteTenantUser: "/service/tenant/deleteTenantUser",// 删除用户
   getPrompt: '/service/prompt/getPrompt', // 获取提示词
+  updatePrompt: '/service/prompt/updatePrompt', // 更新提示词
+
 };

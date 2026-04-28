@@ -231,8 +231,17 @@ export const deleteTenantUserService = (tenantId:string,userId:string):Promise<t
 /**
  * @description: 获取提示词
  * @date: 2026-04-27
- * @author: system
+ * @author: wuwenqiang
  */
 export const getPromptService = (tenantId: string): Promise<types.MyAwesomeData<types.PromptInterface>> => {
   return httpRequest.get<types.PromptInterface>(`${api.getPrompt}?tenantId=${tenantId}`);
+}
+
+/**
+ * @description: 更新提示词
+ * @date: 2026-04-27
+ * @author: wuwenqiang
+ */
+export const updatePromptService = (promptData: types.PromptInterface): Promise<types.MyAwesomeData<types.PromptInterface>> => {
+  return httpRequest.put<types.PromptInterface>(api.updatePrompt, promptData);
 }

@@ -22,7 +22,8 @@ import {
   deleteMyDocumentService,
   getTenantUserService,
   getDirectoryListService,
-  getPromptService
+  getPromptService,
+  updatePromptService
 } from '../service/Index';
 import { PositionEnum } from '../common/enum';
 import AvaterComponent from "../components/AvaterComponent";
@@ -77,6 +78,9 @@ export default struct ChatPage {
 
   @Watch('onTenantUserChange')
   @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
+
+  @State promptInputValue: string = ''; // 提示词输入框的值
+  private promptDialogController: CustomDialogController | null = null; // 提示词对话框控制器
 
   @Styles
   blockStyle(){
@@ -219,11 +223,6 @@ export default struct ChatPage {
 
   /**
    * @author: wuwenqiang
-   * @description: 获取租户i
-   * @date: 2025-8-10 18:06
-   */
-  /**
-   * @author: wuwenqiang
    * @description: 获取租户信息
    * @date: 2025-8-10 18:06
    */
@@ -324,10 +323,188 @@ export default struct ChatPage {
     }).flexGrow(1)
   }
 
+  // page/ChatPage.ets - 在组件内部添加以下方法
+
+  /**
+   * @author: system
+   * @description: 显示修改提示词对话框
+   * @date: 2026-04-27
+   */
+  showPromptDialog = () => {
+    // 获取当前提示词内容
+    const tenantId = this.tenantUser.tenantId || this.tenantUser.id;
+    if (!tenantId) {
+      promptAction.showToast({
+        message: "获取租户信息失败",
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
+    // 先获取最新的提示词
+    getPromptService(tenantId).then((res) => {
+      if (res.data && res.data.prompt) {
+        this.promptInputValue = res.data.prompt;
+      } else {
+        this.promptInputValue = this.defaultPrompt;
+      }
+
+      // 打开对话框
+      this.promptDialogController = new CustomDialogController({
+        customStyle: true,
+        builder: BottomDialogComponent({
+          dialogHeight: 'auto',
+          builder: this.promptDialogBuilder.bind(this)
+        }),
+        alignment: DialogAlignment.Bottom,
+      })
+      this.promptDialogController.open()
+    }).catch(() => {
+      this.promptInputValue = this.defaultPrompt;
+      this.promptDialogController = new CustomDialogController({
+        customStyle: true,
+        builder: BottomDialogComponent({
+          dialogHeight: 'auto',
+          builder: this.promptDialogBuilder.bind(this)
+        }),
+        alignment: DialogAlignment.Bottom,
+      })
+      this.promptDialogController.open()
+    });
+  }
+
+  /**
+   * @author: system
+   * @description: 保存提示词
+   * @date: 2026-04-27
+   */
+  savePrompt = () => {
+    const tenantId = this.tenantUser.tenantId;
+    if (!tenantId) {
+      promptAction.showToast({
+        message: "获取租户信息失败",
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+    const promptData: PromptInterface = {
+      id: this.promptData?.id || '',
+      tenantId: tenantId,
+      userId: "",
+      prompt: this.promptInputValue.trim(),
+      createTime: "",
+      updateTime: ""
+    };
+    updatePromptService(promptData).then((res) => {
+      if (res.data !== null) {
+        promptAction.showToast({
+          message: "保存成功",
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+        // 更新本地提示词数据
+        this.promptData = res.data;
+        this.prompt = res.data.prompt;
+        // 关闭对话框
+        this.promptDialogController?.close();
+      } else {
+        promptAction.showToast({
+          message: res.msg || "保存失败",
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+      }
+    }).catch((error:Error) => {
+      console.error('保存提示词失败:', JSON.stringify(error));
+      promptAction.showToast({
+        message: "保存失败，请重试",
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+    });
+  }
+
+  /**
+   * @author: system
+   * @description: 提示词对话框内容构建器
+   * @date: 2026-04-27
+   */
+  @Builder
+  promptDialogBuilder() {
+    Column() {
+      // 标题
+      Text('修改提示词')
+        .fontSize(size.middleFont)
+        .fontWeight(FontWeight.Medium)
+        .padding(size.middleGap)
+        .width('100%')
+        .textAlign(TextAlign.Center)
+        .border({
+          width: { bottom: 1 },
+          color: { bottom: colors.borderColor },
+          style: { bottom: BorderStyle.Solid }
+        })
+
+      // 灰色背景内容区
+      Column() {
+        // 白色卡片
+        Column() {
+          // 多行文本框
+          TextArea({
+            text: this.promptInputValue,
+            placeholder: "请输入提示词"
+          })
+            .height(size.textareaHeight)
+            .backgroundColor(colors.white)
+            .borderRadius(size.middleBorderRaduis)
+            .padding(size.middleGap)
+            .onChange((value: string) => {
+              this.promptInputValue = value;
+            })
+        }
+        .width('100%')
+        .backgroundColor(colors.white)
+        .borderRadius(size.middleBorderRaduis)
+        .padding(size.middleGap)
+
+        // 保存按钮
+        Text('保存')
+          .width('100%')
+          .height(size.btnHeight)
+          .textAlign(TextAlign.Center)
+          .borderRadius(size.btnHeight / 2)
+          .margin({ top: size.middleGap, bottom: size.middleGap })
+          .fontColor(Color.White)
+          .backgroundColor(this.promptInputValue.trim() ? colors.primary : colors.gray)
+          .enabled(this.promptInputValue.trim() ? true : false)
+          .onClick(() => {
+            if (this.promptInputValue.trim()) {
+              this.savePrompt();
+            }
+          })
+      }
+      .layoutWeight(1)
+      .width('100%')
+      .backgroundColor(colors.pageBackground)
+      .padding(size.middleGap)
+    }
+    .height("80%")
+    .width('100%')
+    .backgroundColor(colors.white)
+    .borderRadius({ topLeft: size.middleBorderRaduis, topRight: size.middleBorderRaduis })
+  }
+
   // popup构造器定义弹框内容
   @Builder
   popupBuilder() {
     Column() {
+      Text("修改提示词").height(size.btnHeight).onClick(() => {
+        this.showMenu = false;
+        this.showPromptDialog();
+      })
+      Divider().height(1).color(colors.borderColor)
       Text("上传文档").height(size.btnHeight).onClick(this.onShowDirectoryDialog)
       Divider().height(1).color(colors.borderColor)
       Text("我的文档").height(size.btnHeight).onClick(()=>{
