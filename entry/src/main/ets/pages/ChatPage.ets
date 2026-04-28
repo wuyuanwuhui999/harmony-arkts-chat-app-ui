@@ -38,12 +38,12 @@ import OptionDialogComponent from '../components/OptionDialogComponent';
 import DialogComponent from "../components/DialogComponent";
 import BottomDialogComponent from "../components/BottomDialogComponent";
 import MarkdownRenderer from "../components/MarkdownRenderer";
+
 @Entry
 @Component
 export default struct ChatPage {
   @State modelList: Array<ChatModelType> = []
   @State activeModelName: string = "";
-  @State prompt: string = "请你自我介绍一下"; // 提示词
   @State chatId: string = "";
   @State loading: boolean = false;
   @State showMenu: boolean = false;
@@ -73,8 +73,7 @@ export default struct ChatPage {
   private dialogController: CustomDialogController | null = null
   private ws: webSocket.WebSocket | null = null;
   @State promptData: PromptInterface | null = null; // 提示词数据
-  @State defaultPrompt: string = "请你自我介绍一下"; // 默认提示词
-
+  @State userInputValue: string = ""
   @Watch('onTenantUserChange')
   @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
 
@@ -118,7 +117,7 @@ export default struct ChatPage {
   }
 
   onSend = async () => {
-    if (this.prompt.trim() === "") {
+    if (this.userInputValue.trim() === "") {
       promptAction.showToast({
         message: "请输入要问的问题",
         duration: 2000,
@@ -128,26 +127,22 @@ export default struct ChatPage {
       if (!this.ws) {
         await this.connectWebSocket();
       }
-      if (!this.token) {
-        this.token = await preference.getToken() as string;
-      }
       this.chatId = this.chatId || generateSecureID();
       const payload: ChatParamsType = {
         modelName: this.activeModelName,
-        token: this.token, // 替换为实际用户ID
         chatId: this.chatId, // 替换为实际聊天ID
-        prompt: this.prompt.trim(),
+        prompt: this.userInputValue.trim(),
         type:this.type,
         docIds:this.type === "document" ? this.checkedDocIds : [],
         showThink:this.showThink,
         language: this.language // 如果需要上传文件，请根据实际情况调整
       };
       this.chatList.push({
-        text: this.prompt.trim(),
+        text: this.userInputValue.trim(),
         position: PositionEnum.RIGHT,
       });
 
-      this.prompt = "";
+      this.userInputValue = "";
       this.ws?.send(JSON.stringify(payload), () => {
         this.loading = true;
         console.log("发送消息成功")
@@ -156,8 +151,11 @@ export default struct ChatPage {
   }
 
   connectWebSocket(): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const url = `ws://${HOST.replace(/http[s]?:\/\//, "")}${api.chatWs}`; // 替换为实际API地址
+    return new Promise(async (resolve, reject) => {
+      if (!this.token) {
+        this.token = await preference.getToken() as string;
+      }
+      const url = `ws://${HOST.replace(/http[s]?:\/\//, "")}${api.chatWs}?token=${this.token}`; // 替换为实际API地址
       this.ws = webSocket.createWebSocket();
       // 设置事件监听
       this.ws.on('open', () => {
@@ -409,11 +407,7 @@ export default struct ChatPage {
 
     // 先获取最新的提示词
     getPromptService(tenantId).then((res) => {
-      if (res.data && res.data.prompt) {
-        this.promptInputValue = res.data.prompt;
-      } else {
-        this.promptInputValue = this.defaultPrompt;
-      }
+      this.promptInputValue = res.data.prompt;
 
       // 打开对话框
       this.promptDialogController = new CustomDialogController({
@@ -426,7 +420,6 @@ export default struct ChatPage {
       })
       this.promptDialogController.open()
     }).catch(() => {
-      this.promptInputValue = this.defaultPrompt;
       this.promptDialogController = new CustomDialogController({
         customStyle: true,
         builder: BottomDialogComponent({
@@ -471,7 +464,6 @@ export default struct ChatPage {
         });
         // 更新本地提示词数据
         this.promptData = res.data;
-        this.prompt = res.data.prompt;
         // 关闭对话框
         this.promptDialogController?.close();
       } else {
@@ -518,7 +510,7 @@ export default struct ChatPage {
         Column() {
           // 多行文本框
           TextArea({
-            text: this.promptInputValue,
+            text: this.userInputValue,
             placeholder: "请输入提示词"
           })
             .height(size.textareaHeight)
@@ -840,14 +832,9 @@ export default struct ChatPage {
       const res = await getPromptService(tenantId);
       if (res.data && res.data.prompt) {
         this.promptData = res.data;
-        this.prompt = res.data.prompt; // 将提示词设置到输入框
-      } else {
-        // 如果没有提示词，使用默认提示词
-        this.prompt = this.defaultPrompt;
       }
     } catch (error) {
       console.error('获取提示词失败:', JSON.stringify(error));
-      this.prompt = this.defaultPrompt;
     }
   }
 
@@ -1248,27 +1235,24 @@ export default struct ChatPage {
             })
           Row() {
             TextInput({
-              text: this.prompt,
+              text: this.userInputValue,
               placeholder: "有问题，尽管问"
             })
               .height(size.middleAvater)
               .layoutWeight(1)
               .backgroundColor(Color.Transparent)
               .onChange((value) => {
-                this.prompt = value.trim();
+                this.userInputValue = value.trim();
               })
 
-            if (this.prompt) {
+            if (this.userInputValue) {
               Image($r('app.media.icon_clear'))
                 .width(size.smallIcon)
                 .height(size.smallIcon)
                 .onClick(() => {
-                  this.prompt = '';
+                  this.userInputValue = '';
                 })
                 .margin({ right: size.middleGap })
-                .onClick(() => {
-                  this.prompt = '';
-                })
             }
           }
           .borderRadius(size.middleAvater)

@@ -79,7 +79,6 @@ export type ChatModelType = {
 }
 export interface ChatParamsType {
   modelName:string,
-  token: string, // 替换为实际用户ID
   chatId:string, // 替换为实际聊天ID
   prompt: string,// 提示词
   type:string,//查询的类型
