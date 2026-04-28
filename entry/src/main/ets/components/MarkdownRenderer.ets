@@ -212,15 +212,12 @@ class MarkdownParser {
 export default struct MarkdownRenderer {
   private markdownText: string = ''
   private textColor: ResourceColor = Color.Black
-  private fontSize: number = 16
-  private paddingValue: Padding | number = 16
 
   build() {
     Column() {
       this.buildMarkdownElements()
     }
     .width('100%')
-    .padding(this.paddingValue)
     .alignItems(HorizontalAlign.Start)
   }
 
@@ -276,7 +273,6 @@ export default struct MarkdownRenderer {
           Text(span.text)
             .fontColor('#007DFF')
             .decoration({ type: TextDecorationType.Underline })
-            .fontSize(this.fontSize)
             .fontWeight(span.isBold ? FontWeight.Bold : FontWeight.Normal)
             .fontStyle(span.isItalic ? FontStyle.Italic : FontStyle.Normal)
             .onClick(() => {
@@ -285,7 +281,6 @@ export default struct MarkdownRenderer {
         } else {
           Text(span.text)
             .fontColor(this.textColor)
-            .fontSize(this.fontSize)
             .fontWeight(span.isBold ? FontWeight.Bold : FontWeight.Normal)
             .fontStyle(span.isItalic ? FontStyle.Italic : FontStyle.Normal)
             .backgroundColor(span.isCode ? '#F5F5F5' : Color.Transparent)
@@ -306,7 +301,6 @@ export default struct MarkdownRenderer {
       ForEach(items, (item: string) => {
         Row() {
           Text('•')
-            .fontSize(this.fontSize)
             .fontColor(this.textColor)
             .margin({ right: 8 })
           this.renderParagraph(item)
@@ -335,7 +329,6 @@ export default struct MarkdownRenderer {
   @Builder
   renderCode(content: string) {
     Text(content)
-      .fontSize(this.fontSize - 1)
       .fontColor('#24292E')
       .fontFamily('monospace')
       .backgroundColor('#F6F8FA')

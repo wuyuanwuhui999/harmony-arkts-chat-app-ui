@@ -63,7 +63,6 @@ export default struct ChatPage {
   ];
   @State thinkContent: string = "";
   @State responseContent: string = "";
-  @State showMyDoc:boolean = false;
   @State showThink:boolean = false;
   @State type:string = "";
   @State language:string = "zh";
@@ -81,6 +80,7 @@ export default struct ChatPage {
 
   @State promptInputValue: string = ''; // 提示词输入框的值
   private promptDialogController: CustomDialogController | null = null; // 提示词对话框控制器
+  private myDocDialogController: CustomDialogController | null = null; // 我的文档对话框控制器
 
   @Styles
   blockStyle(){
@@ -275,6 +275,95 @@ export default struct ChatPage {
       this.dialogController.open()
     })
 
+  }
+
+  /**
+   * @author: system
+   * @description: 我的文档对话框内容构建器
+   * @date: 2026-04-28
+   */
+  @Builder
+  myDocumentBuilder() {
+    Column() {
+      // 标题栏
+      Row() {
+        Blank().width(size.smallIcon).height(size.smallIcon)
+        Text('我的文档')
+          .fontSize(size.middleFont)
+          .fontWeight(FontWeight.Medium)
+          .padding(size.middleGap)
+          .textAlign(TextAlign.Center)
+          .layoutWeight(1)
+        Image($r("app.media.icon_close"))
+          .width(size.middleFont)
+          .height(size.middleFont)
+          .opacity(0.5)
+          .onClick(() => {
+            this.myDocDialogController?.close()
+          })
+          .margin({ right: size.middleGap })
+      }
+      .width("100%")
+      .justifyContent(FlexAlign.Center)
+      .border({
+        width: { bottom: 1 },
+        color: { bottom: colors.borderColor },
+        style: { bottom: BorderStyle.Solid }
+      })
+
+      // 文档列表内容区
+      if (this.myDocList.length === 0) {
+        Column() {
+          Text("暂无文档")
+            .fontColor(colors.gray)
+            .padding(size.middleGap)
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .justifyContent(FlexAlign.Center)
+      } else {
+        Scroll() {
+          List() {
+            ForEach(this.myDocList, (item: DocumentType, index: number) => {
+              ListItem() {
+                Column({ space: size.miniGap }) {
+                  Text(formatTime(item.createTime))
+                    .fontColor(colors.gray)
+                    .fontSize(12)
+                    .width('100%')
+                  Text(item.name)
+                    .maxLines(2)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    .width('100%')
+                    .fontSize(size.middleFont)
+                }
+                .alignItems(HorizontalAlign.Start)
+                .justifyContent(FlexAlign.Start)
+                .width('100%')
+                .padding({
+                  top: size.middleGap,
+                  bottom: size.middleGap,
+                  left: size.middleGap,
+                  right: size.middleGap
+                })
+              }
+              .swipeAction({
+                end: () => {
+                  return this.DeleteButton(item)
+                }
+              })
+            })
+          }
+          .width('100%')
+        }
+        .layoutWeight(1)
+        .backgroundColor(colors.white)
+      }
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor(colors.white)
+    .borderRadius({ topLeft: size.middleBorderRaduis, topRight: size.middleBorderRaduis })
   }
 
   /**
@@ -496,6 +585,35 @@ export default struct ChatPage {
     .borderRadius({ topLeft: size.middleBorderRaduis, topRight: size.middleBorderRaduis })
   }
 
+  /**
+   * @author: system
+   * @description: 显示我的文档对话框
+   * @date: 2026-04-28
+   */
+  showMyDocumentDialog = () => {
+    // 加载我的文档列表
+    getMyDocumentService(this.tenantUser.tenantId).then((res) => {
+      this.myDocList = res.data;
+      // 打开对话框
+      this.myDocDialogController = new CustomDialogController({
+        customStyle: true,
+        builder: BottomDialogComponent({
+          dialogHeight: '80%',
+          builder: this.myDocumentBuilder.bind(this)
+        }),
+        alignment: DialogAlignment.Bottom,
+      })
+      this.myDocDialogController.open()
+    }).catch((error:Error) => {
+      console.error('获取文档列表失败:', JSON.stringify(error));
+      promptAction.showToast({
+        message: "获取文档列表失败",
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+    });
+  }
+
   // popup构造器定义弹框内容
   @Builder
   popupBuilder() {
@@ -508,11 +626,8 @@ export default struct ChatPage {
       Text("上传文档").height(size.btnHeight).onClick(this.onShowDirectoryDialog)
       Divider().height(1).color(colors.borderColor)
       Text("我的文档").height(size.btnHeight).onClick(()=>{
-        this.showMyDoc = true;
         this.showMenu = false;
-        getMyDocumentService(this.tenantUser.tenantId).then((res)=>{
-          this.myDocList = res.data
-        });
+        this.showMyDocumentDialog();
       })
       Divider().height(1).color(colors.borderColor)
       Text("历史记录").height(size.btnHeight).onClick(()=>{
@@ -579,6 +694,8 @@ export default struct ChatPage {
     }
   }
 
+  // page/ChatPage.ets - 修改 DeleteButton 方法
+
   /**
    * @author: wuwenqiang
    * @description: 删除弹窗
@@ -610,6 +727,10 @@ export default struct ChatPage {
                 duration: 2000,
                 bottom: px2vp(display.getDefaultDisplaySync().height) / 2
               })
+              // 刷新文档列表
+              getMyDocumentService(this.tenantUser.tenantId).then((res) => {
+                this.myDocList = res.data;
+              });
               this.dialogController?.close()
             }).catch(()=>{
               promptAction.showToast({
@@ -618,7 +739,6 @@ export default struct ChatPage {
                 bottom: px2vp(display.getDefaultDisplaySync().height) / 2
               })
             })
-
           },
         }),
         alignment: DialogAlignment.Center,
@@ -800,45 +920,6 @@ export default struct ChatPage {
             .opacity(0.5)
             .onClick(() => {
               this.showHistory = false
-            })
-        }
-        .height("100%")
-        .width("100%")
-        .zIndex(1)
-      }else if(this.showMyDoc){
-        Row() {
-          Scroll() {
-            List() {
-              ForEach(this.myDocList, (item: DocumentType, index: number) => {
-                ListItem() {
-                  Column({ space: size.miniGap }) {
-                    Text(formatTime(item.createTime)).fontColor(colors.gray)
-                    Text(item.name)
-                      .maxLines(2)// 限制最大行数为1
-                      .textOverflow({ overflow: TextOverflow.Ellipsis })// 溢出时显示省略号
-                      .width('100%') // 必须设置宽度（或固定宽度）触发溢出判断
-                  }.alignItems(HorizontalAlign.Start).justifyContent(FlexAlign.Start)
-                }.swipeAction({
-                  end: () => {
-                    return this.DeleteButton(item)
-                  }
-                })
-              })
-            }
-          }
-          .align(Alignment.TopStart)
-          .padding(size.middleGap)
-          .width("70%")
-          .backgroundColor(colors.white)
-          .height("100%")
-
-          Row()
-            .height("100%")
-            .layoutWeight(1)
-            .backgroundColor(colors.black)
-            .opacity(0.5)
-            .onClick(() => {
-              this.showMyDoc = false
             })
         }
         .height("100%")
