@@ -137,13 +137,15 @@ struct LoginPage {
     Column() {
       GlobalLoading({ controller: this.loadingController })
       Column() {
-        Image($r("app.media.icon_ai"))
-          .width(size.bigIcon * 3)
-          .height(size.bigIcon * 3)
+        Image($r("app.media.icon_logo"))
+          .width(size.bigIcon * 2)
+          .height(size.bigIcon * 2)
           .margin({ top: size.middleGap * 2, bottom: size.middleGap * 2 })
         Row() {
           Row() {
-            Text("账号密码登录").border({
+            Text("账号密码登录")
+              .fontColor(this.activeIndex === 0 ? colors.primary : colors.black)
+              .border({
               width: {
                 bottom: 2,
               },

@@ -49,7 +49,7 @@ export default struct ChatPage {
   @State showMenu: boolean = false;
   @State pageNum: number = 1;
   @State total: number = 0;
-  @State chatHistoryGroup: GroupedByTimeAgoType = {};
+  @State historyList: GroupedByTimeAgoType = {}; // 历史记录数据
   @State token: string = "";
   @State showHistory:boolean = false;
   private scroller: Scroller = new Scroller()
@@ -81,6 +81,7 @@ export default struct ChatPage {
   @State promptInputValue: string = ''; // 提示词输入框的值
   private promptDialogController: CustomDialogController | null = null; // 提示词对话框控制器
   private myDocDialogController: CustomDialogController | null = null; // 我的文档对话框控制器
+  private historyDialogController: CustomDialogController | null = null; // 历史记录对话框控制器
 
   @Styles
   blockStyle(){
@@ -114,31 +115,6 @@ export default struct ChatPage {
 
   aboutToDisappear() {
     this.ws?.close();
-  }
-
-  useChatHistory() {
-    const chatHistoryGroup: GroupedByTimeAgoType = JSON.parse(JSON.stringify(this.chatHistoryGroup))
-    getChatHistoryService(this.pageNum, PAGE_SIZE).then((res) => {
-      this.total = res.total
-      const result: GroupedByChatIdType = {}
-      res.data.forEach((aItem) => {
-        aItem.timeAgo = formatTimeAgo(aItem.createTime);
-        if (!result[aItem.chatId]) {
-          result[aItem.chatId] = [];
-        }
-        result[aItem.chatId].push(aItem);
-      });
-
-      const keys: string[] = Object.keys(result);
-      keys.forEach((key) => {
-        const timeAgo = result[key][0].timeAgo;
-        if (!chatHistoryGroup[timeAgo]) {
-          chatHistoryGroup[timeAgo] = [];
-        }
-        chatHistoryGroup[timeAgo].push(result[key])
-      });
-      this.chatHistoryGroup = chatHistoryGroup;
-    })
   }
 
   onSend = async () => {
@@ -632,14 +608,195 @@ export default struct ChatPage {
       Divider().height(1).color(colors.borderColor)
       Text("历史记录").height(size.btnHeight).onClick(()=>{
         this.showMenu = false;
-        this.showHistory = true;
-        this.chatHistoryGroup = {};
-        this.useChatHistory();
+        this.showHistoryDialog(); // 修改：改为打开对话框
       })
       Divider().height(1).color(colors.borderColor)
       Text("切换模型").height(size.btnHeight).onClick(this.onTabModel)
     }
     .width(size.popupMenuWidth)
+  }
+
+  /**
+   * @author: system
+   * @description: 显示历史记录对话框
+   * @date: 2026-04-28
+   */
+  showHistoryDialog = () => {
+    // 清空并重新加载历史记录数据
+    this.historyList = {};
+    this.pageNum = 1;
+    this.loadHistoryData();
+
+    // 打开对话框
+    this.historyDialogController = new CustomDialogController({
+      customStyle: true,
+      builder: BottomDialogComponent({
+        dialogHeight: '80%',
+        builder: this.historyDialogBuilder.bind(this)
+      }),
+      alignment: DialogAlignment.Bottom,
+    })
+    this.historyDialogController.open()
+  }
+
+  /**
+   * @author: system
+   * @description: 加载历史记录数据
+   * @date: 2026-04-28
+   */
+  loadHistoryData = () => {
+    getChatHistoryService(this.tenantUser.tenantId,this.pageNum, PAGE_SIZE).then((res) => {
+      this.total = res.total
+      const result: GroupedByChatIdType = {}
+      res.data.forEach((aItem) => {
+        aItem.timeAgo = formatTimeAgo(aItem.createTime);
+        if (!result[aItem.chatId]) {
+          result[aItem.chatId] = [];
+        }
+        result[aItem.chatId].push(aItem);
+      });
+
+      const keys: string[] = Object.keys(result);
+      keys.forEach((key) => {
+        const timeAgo = result[key][0].timeAgo;
+        if (!this.historyList[timeAgo]) {
+          this.historyList[timeAgo] = [];
+        }
+        this.historyList[timeAgo].push(result[key])
+      });
+    })
+  }
+
+  /**
+   * @author: system
+   * @description: 加载更多历史记录
+   * @date: 2026-04-28
+   */
+  loadMoreHistory = () => {
+    if (this.total > this.pageNum * PAGE_SIZE) {
+      this.pageNum++;
+      getChatHistoryService(this.tenantUser.tenantId,this.pageNum, PAGE_SIZE).then((res) => {
+        const result: GroupedByChatIdType = {}
+        res.data.forEach((aItem) => {
+          aItem.timeAgo = formatTimeAgo(aItem.createTime);
+          if (!result[aItem.chatId]) {
+            result[aItem.chatId] = [];
+          }
+          result[aItem.chatId].push(aItem);
+        });
+
+        const keys: string[] = Object.keys(result);
+        keys.forEach((key) => {
+          const timeAgo = result[key][0].timeAgo;
+          if (!this.historyList[timeAgo]) {
+            this.historyList[timeAgo] = [];
+          }
+          this.historyList[timeAgo].push(result[key])
+        });
+      })
+    }
+  }
+
+  /**
+   * @author: system
+   * @description: 历史记录对话框内容构建器
+   * @date: 2026-04-28
+   */
+  @Builder
+  historyDialogBuilder() {
+    Column() {
+      // 标题栏
+      Row() {
+        Blank().width(size.smallIcon).height(size.smallIcon)
+        Text('历史记录')
+          .fontSize(size.middleFont)
+          .fontWeight(FontWeight.Medium)
+          .padding(size.middleGap)
+          .textAlign(TextAlign.Center)
+          .layoutWeight(1)
+        Image($r("app.media.icon_close"))
+          .width(size.middleFont)
+          .height(size.middleFont)
+          .opacity(0.5)
+          .onClick(() => {
+            this.historyDialogController?.close()
+          })
+          .margin({ right: size.middleGap })
+      }
+      .width("100%")
+      .justifyContent(FlexAlign.Center)
+      .border({
+        width: { bottom: 1 },
+        color: { bottom: colors.borderColor },
+        style: { bottom: BorderStyle.Solid }
+      })
+
+      // 历史记录内容区
+      Scroll() {
+        Column({ space: size.middleGap }) {
+          ForEach(Object.keys(this.historyList), (key: string) => {
+            Column({ space: size.miniGap }) {
+              Text(key).fontColor(colors.gray)
+              ForEach(this.historyList[key], (items: ChatHistoryType[]) => {
+                Column() {
+                  Text(items[0].prompt)
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    .width('100%')
+                    .padding({
+                      top: size.smallGap,
+                      bottom: size.smallGap,
+                      left: size.smallGap,
+                      right: size.smallGap
+                    })
+                    .onClick(() => {
+                      // 关闭对话框
+                      this.historyDialogController?.close();
+                      // 清空当前聊天列表
+                      this.chatList.length = 0;
+                      // 设置当前聊天ID
+                      this.chatId = items[0].chatId;
+                      // 加载历史聊天记录
+                      items.forEach((item) => {
+                        this.chatList.push({
+                          text: item.prompt,
+                          position: PositionEnum.RIGHT
+                        }, {
+                          thinkContent: item.thinkContent,
+                          responseContent: item.responseContent,
+                          position: PositionEnum.LEFT
+                        })
+                      })
+                    })
+                }
+                .width('100%')
+                .backgroundColor(colors.white)
+                .borderRadius(size.smallBorderRaduis)
+                .margin({ bottom: size.smallGap })
+              })
+            }
+            .alignItems(HorizontalAlign.Start)
+            .width('100%')
+          })
+        }
+        .alignItems(HorizontalAlign.Start)
+        .justifyContent(FlexAlign.Start)
+        .padding(size.middleGap)
+        .width('100%')
+      }
+      .layoutWeight(1)
+      .scrollable(ScrollDirection.Vertical)
+      .onScrollEdge((side: Edge) => {
+        if (side === Edge.Bottom) {
+          this.loadMoreHistory();
+        }
+      })
+      .backgroundColor(colors.pageBackground)
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor(colors.white)
+    .borderRadius({ topLeft: size.middleBorderRaduis, topRight: size.middleBorderRaduis })
   }
 
   onTabModel=()=>{
@@ -869,63 +1026,6 @@ export default struct ChatPage {
 
   build() {
     Stack() {
-      if (this.showHistory) {
-        Row() {
-          Scroll() {
-            Column({ space: size.middleGap }) {
-              ForEach(Object.keys(this.chatHistoryGroup), (key: string) => {
-                Column({ space: size.miniGap }) {
-                  Text(key).fontColor(colors.gray)
-                  ForEach(this.chatHistoryGroup[key], (items: ChatHistoryType[]) => {
-                    Text(items[0].prompt)
-                      .maxLines(1)// 限制最大行数为1
-                      .textOverflow({ overflow: TextOverflow.Ellipsis })// 溢出时显示省略号
-                      .width('100%') // 必须设置宽度（或固定宽度）触发溢出判断
-                      .onClick(()=>{
-                        this.showMenu = false;
-                        this.chatList.length = 0;
-                        this.chatId = items[0].chatId;
-                        items.forEach((item)=>{
-                          this.chatList.push({
-                            text:item.prompt,
-                            position:PositionEnum.RIGHT
-                          },{
-                            thinkContent:item.thinkContent,
-                            responseContent:item.responseContent,
-                            position:PositionEnum.LEFT
-                          })
-                        })
-                      })
-                  })
-                }.alignItems(HorizontalAlign.Start)
-              })
-            }.alignItems(HorizontalAlign.Start).justifyContent(FlexAlign.Start)
-          }
-          .onScrollEdge((side: Edge) => {
-            if (this.total > this.pageNum * PAGE_SIZE) {
-              this.pageNum++;
-              this.useChatHistory();
-            }
-          })
-          .align(Alignment.TopStart)
-          .padding(size.middleGap)
-          .width("70%")
-          .backgroundColor(colors.white)
-          .height("100%")
-
-          Row()
-            .height("100%")
-            .layoutWeight(1)
-            .backgroundColor(colors.black)
-            .opacity(0.5)
-            .onClick(() => {
-              this.showHistory = false
-            })
-        }
-        .height("100%")
-        .width("100%")
-        .zIndex(1)
-      }
       Column() {
         Row() {
           AvaterComponent({dimensions:size.middleAvater,avater:this.userData.avater}).onClick(()=>{

@@ -105,8 +105,9 @@ export const loginByEmailService = (email:string,code:string):Promise<types.MyAw
  * @date: 2025-05-16 00:19
  * @author wuwenqiang
  */
-export const getChatHistoryService = (pageNum:number,pageSize:number):Promise<types.MyAwesomeData<Array<types.ChatHistoryType>>> => {
-  return httpRequest.get<Array<types.ChatHistoryType>>(`${api.getChatHistory}?pageNum=${pageNum}&pageSize=${pageSize}`);
+export const getChatHistoryService = (tenantId:string,pageNum:number,pageSize:number):Promise<types.MyAwesomeData<Array<types.ChatHistoryType>>> => {
+  console.log(`获取历史记录,地址：${api.getChatHistory}?tenantId=${tenantId}&pageNum=${pageNum}&pageSize=${pageSize}`)
+  return httpRequest.get<Array<types.ChatHistoryType>>(`${api.getChatHistory}?tenantId=${tenantId}pageNum=${pageNum}&pageSize=${pageSize}`);
 }
 
 /**
