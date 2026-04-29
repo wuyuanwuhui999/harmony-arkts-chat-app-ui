@@ -510,7 +510,7 @@ export default struct ChatPage {
         Column() {
           // 多行文本框
           TextArea({
-            text: this.userInputValue,
+            text: this.promptInputValue,
             placeholder: "请输入提示词"
           })
             .height(size.textareaHeight)
