@@ -13,7 +13,8 @@ import {
   TenantUserType,
   DirectoryType,
   DocumentCheckType,
-  PromptInterface
+  PromptInterface,
+  TenantType
 } from '../type/Index';
 import {
   getModelListService,
@@ -23,7 +24,8 @@ import {
   getTenantUserService,
   getDirectoryListService,
   getPromptService,
-  updatePromptService
+  updatePromptService,
+  getTenantListService
 } from '../service/Index';
 import { PositionEnum } from '../common/enum';
 import AvaterComponent from "../components/AvaterComponent";
@@ -76,7 +78,7 @@ export default struct ChatPage {
   @State userInputValue: string = ""
   @Watch('onTenantUserChange')
   @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
-
+  @State tenantList: Array<TenantType> = []
   @State promptInputValue: string = ''; // 提示词输入框的值
   private promptDialogController: CustomDialogController | null = null; // 提示词对话框控制器
   private myDocDialogController: CustomDialogController | null = null; // 我的文档对话框控制器
@@ -795,25 +797,32 @@ export default struct ChatPage {
     this.dialogController = new CustomDialogController({
       customStyle: true,
       builder: OptionDialogComponent({
-        cancel: (): void => this.onCancel(),
-        confirm: (value): void => this.onConfirm(value),
-        options: this.modelList.map((item)=>item.modelName),
+        cancel: (): void => this.onModelDialogCancel(),
+        confirm: (value: string, index: number): void => this.onModelConfirm(value),
+        options: this.modelList.map((item) => item.modelName),
       }),
       alignment: DialogAlignment.Bottom,
-    })
+    });
+    this.dialogController.open();
   }
 
   /**
-   * @description: 修改用户信息
-   * @date: 2024-01-10 23:01
-   * @author wuwenqiang
+   * @author: system
+   * @description: 模型对话框取消
+   * @date: 2026-04-29
    */
-  onConfirm(value: string) {
-    this.activeModelName = value;
+  onModelDialogCancel = () => {
+    this.dialogController?.close();
   }
 
-  onCancel(){
-    this.dialogController?.close()
+  /**
+   * @author: wuwenqiang
+   * @description: 确认切换模型
+   * @date: 2026-04-29
+   */
+  onModelConfirm = (value: string) => {
+    this.activeModelName = value;
+    this.dialogController?.close();
   }
 
   /**
@@ -1011,6 +1020,87 @@ export default struct ChatPage {
     .width("100%").height("100%")
   }
 
+  /**
+   * @author: system
+   * @description: 显示租户切换对话框
+   * @date: 2026-04-29
+   */
+  showTenantDialog = () => {
+    // 获取租户列表
+    getTenantListService().then((res) => {
+      this.tenantList = res.data
+
+      // 打开对话框
+      this.dialogController = new CustomDialogController({
+        customStyle: true,
+        builder: OptionDialogComponent({
+          cancel: (): void => this.onTenantDialogCancel(),
+          confirm: (value: string, index: number): void => this.onTenantSwitch(index),
+          options: this.tenantList.map(item => item.name),
+        }),
+        alignment: DialogAlignment.Bottom,
+      });
+      this.dialogController.open();
+    }).catch((error: Error) => {
+      console.error('获取租户列表失败:', JSON.stringify(error));
+      promptAction.showToast({
+        message: "获取租户列表失败",
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+    });
+  }
+
+  /**
+   * @author: system
+   * @description: 租户对话框取消
+   * @date: 2026-04-29
+   */
+  onTenantDialogCancel = () => {
+    this.dialogController?.close();
+  }
+
+  /**
+   * @author: system
+   * @description: 切换租户
+   * @date: 2026-04-29
+   */
+  onTenantSwitch = (index: number) => {
+    const selectedTenant = this.tenantList[index];
+    if (!selectedTenant) {
+      this.dialogController?.close();
+      return;
+    }
+
+    // 如果选择的是私人空间（id为空），使用默认租户
+    if (selectedTenant.id === "") {
+      const defaultTenantUser = this.getDefaultTenantUser();
+      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, defaultTenantUser);
+      this.dialogController?.close();
+      // 切换租户后重新加载提示词
+      this.getPrompt();
+      return;
+    }
+
+    // 获取租户用户信息
+    getTenantUserService(selectedTenant.id).then((res) => {
+      if (res.data) {
+        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, res.data);
+      } else {
+        // 如果获取失败，使用默认租户
+        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
+      }
+      this.dialogController?.close();
+      // 切换租户后重新加载提示词
+      this.getPrompt();
+    }).catch(() => {
+      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
+      this.dialogController?.close();
+      // 切换租户后重新加载提示词
+      this.getPrompt();
+    });
+  }
+
   build() {
     Stack() {
       Column() {
@@ -1020,7 +1110,34 @@ export default struct ChatPage {
               url: 'pages/UserPage'
             });
           })
-          Text("当前接入模型：" + this.activeModelName).layoutWeight(1).textAlign(TextAlign.Center)
+          // 中间标题区域 - 显示租户名称和模型名称
+          Row() {
+            // 租户名称 - 可点击切换
+            Text(this.tenantUser.tenantName || "私人空间")
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .onClick(() => {
+                this.showTenantDialog();
+              })
+
+            Text(" | ")
+              .fontSize(16)
+              .fontColor(colors.gray)
+
+            // 模型名称 - 可点击切换
+            Text(this.activeModelName || "选择模型")
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .onClick(() => {
+                this.onTabModel();
+              })
+          }
+          .layoutWeight(1)
+          .justifyContent(FlexAlign.Center)
           Image($r('app.media.icon_menu'))
             .width(size.smallIcon)
             .height(size.smallIcon)
@@ -1193,19 +1310,6 @@ export default struct ChatPage {
                 right:size.middleGap
               })
 
-            Text("查询数据库")
-              .fontColor(this.type == "db" ? colors.primary :colors.gray)
-              .borderRadius(size.inputHeight)
-              .border({
-                width:1,
-                color:this.type == "db" ? colors.primary :colors.gray,
-                style:BorderStyle.Solid
-              })
-              .padding(size.smallGap)
-              .backgroundColor(colors.white)
-              .onClick(()=>{
-                this.type = this.type === "db" ? "" : "db"
-              })
             Row({space:size.smallGap}){
               Text(this.language == "zh" ? "中文" : "英文")
               Image($r('app.media.icon_switch')).width(size.smallIcon).height(size.smallGap)

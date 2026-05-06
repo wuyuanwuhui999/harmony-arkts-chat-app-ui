@@ -3,7 +3,7 @@ import { TenantUserType, UserDataType, TenantType, TenantStatus} from "../type/I
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import { USER_DATA,TENANT_USER_DATA,DEFAULT_TENANT_USER, HOST} from '../common/constant';
-import { getTenantListService, getTenantUserService, updateUserDataService } from '../service/Index';
+import { updateUserDataService } from '../service/Index';
 import preference from '../utils/PreferenceModel';
 import OptionDialogComponent from '../components/OptionDialogComponent';
 import NavigatorTitleComponent from '../components/NavigatorTitleComponent';
@@ -17,13 +17,6 @@ struct UserPage {
   @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
   title: string = '';
   @State field: string = '';
-  @State tenantList: Array<TenantType> = [{
-    id: "",// 租户ID（主键）
-    name: "私人空间",// 租户名称
-    code: "personal",// 租户编码（唯一）
-    status: TenantStatus.DISABLED,// 租户状态
-    created_by: ""// 创建人ID
-  }];
   dialogController: CustomDialogController | null = null
 
   @Styles
@@ -57,12 +50,6 @@ struct UserPage {
     })
     .width('100%')
     .padding({ top: size.middleGap, bottom: size.middleGap })
-  }
-
-  aboutToAppear() {
-    getTenantListService().then((res)=>{
-      this.tenantList.push(...res.data)
-    })
   }
 
   useShowDialog(title: string, field: string) {
@@ -131,23 +118,6 @@ struct UserPage {
       }
     });
     router.clear(); // 清除历史页面
-  }
-
-  /**
-   * @description: 修改用户信息
-   * @date: 2025-09-18 16:53
-   * @author wuwenqiang
-   */
-  getTenantUser = (tenantId:string)=>{
-    if(tenantId === ""){
-      AppStorage.SetOrCreate(TENANT_USER_DATA,this.getDefaultTenantUser());
-      this.dialogController?.close();
-    }else {
-      getTenantUserService(tenantId).then((res)=>{
-        AppStorage.SetOrCreate(TENANT_USER_DATA,res.data);
-        this.dialogController?.close();
-      })
-    }
   }
 
   getDefaultTenantUser():TenantUserType{
@@ -255,36 +225,6 @@ struct UserPage {
                 url: 'pages/UpdatePasswordPage', // 目标url
               });
             })
-
-          if(this.tenantList.length > 0){
-            Text('切换租户')
-              .padding(size.smallGap)
-              .border({
-                width: 1,
-                color: colors.borderColor,
-                style: BorderStyle.Solid
-              })
-              .backgroundColor(colors.white)
-              .borderRadius(size.middleBorderRaduis * 2)
-              .width('100%')
-              .padding(size.middleGap)
-              .textAlign(TextAlign.Center)
-              .margin({ top: size.middleGap })
-              .onClick(() => {
-                this.dialogController = new CustomDialogController({
-                  customStyle: true,
-                  builder: OptionDialogComponent({
-                    cancel: (): void => this.onCancel(),
-                    confirm: (value,index): void => this.getTenantUser(this.tenantList[index].id),
-                    options: this.tenantList.map((item)=>{
-                      return item.name
-                    }),
-                  }),
-                  alignment: DialogAlignment.Bottom,
-                })
-                this.dialogController.open()
-              })
-          }
 
           if(this.tenantUser.roleType > 1){
             Text('租户管理')
