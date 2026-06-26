@@ -1,6 +1,6 @@
 import { TenantUserType } from "../type/Index";
 
-export const HOST: string = 'http://192.168.47.154:3000'; // 内网地址
+export const HOST: string = 'http://192.168.1.102:4000'; // 内网地址
 export const USER_DATA: string = 'USER_DATA';//用户信息
 export const TENANT_USER_DATA: string = 'TENANT_USER_DATA';//租户信息
 export const DEVICE_INFO: string = 'DEVICE_INFO';// 设备信息
@@ -21,3 +21,6 @@ export const DEFAULT_TENANT_USER:TenantUserType = {
   disabled: 0,// 是否禁用
   email: ''// 邮箱
 }
+
+export const COMPANY_ID: string = 'COMPANY_ID'; // 公司ID
+export const COMPANY_DATA: string = 'COMPANY_DATA'; // 公司信息

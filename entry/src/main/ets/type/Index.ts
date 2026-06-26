@@ -241,3 +241,15 @@ export interface PromptInterface {
   createTime?: string;
   updateTime?: string;
 }
+
+export interface CompanyType {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  status: number;
+  createDate: string;
+  updateDate: string;
+  createdBy: string;
+  updatedBy: string;
+}

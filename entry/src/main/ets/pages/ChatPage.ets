@@ -14,7 +14,8 @@ import {
   DirectoryType,
   DocumentCheckType,
   PromptInterface,
-  TenantType
+  TenantType,
+  CompanyType
 } from '../type/Index';
 import {
   getModelListService,
@@ -29,7 +30,7 @@ import {
 } from '../service/Index';
 import { PositionEnum } from '../common/enum';
 import AvaterComponent from "../components/AvaterComponent";
-import { HOST, PAGE_SIZE, USER_DATA, DEFAULT_TENANT_USER,TENANT_USER_DATA} from '../common/constant';
+import { USER_DATA, TENANT_USER_DATA, DEFAULT_TENANT_USER, COMPANY_DATA, PAGE_SIZE, HOST } from '../common/constant';
 import { formatTimeAgo, generateSecureID, formatTime} from "../utils/common";
 import { display, promptAction } from '@kit.ArkUI';
 import webSocket from '@ohos.net.webSocket';
@@ -80,6 +81,7 @@ export default struct ChatPage {
   @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
   @State tenantList: Array<TenantType> = []
   @State promptInputValue: string = ''; // 提示词输入框的值
+  @StorageLink(COMPANY_DATA) companyData: CompanyType | null = null;
   private promptDialogController: CustomDialogController | null = null; // 提示词对话框控制器
   private myDocDialogController: CustomDialogController | null = null; // 我的文档对话框控制器
   private historyDialogController: CustomDialogController | null = null; // 历史记录对话框控制器
@@ -1020,14 +1022,20 @@ export default struct ChatPage {
     .width("100%").height("100%")
   }
 
+  // ets/pages/ChatPage.ets - 修改 showTenantDialog 方法
+
   /**
    * @author: system
    * @description: 显示租户切换对话框
    * @date: 2026-04-29
    */
   showTenantDialog = () => {
-    // 获取租户列表
-    getTenantListService().then((res) => {
+    // 获取公司ID
+    const companyData = AppStorage.get<CompanyType>(COMPANY_DATA);
+    const companyId = companyData?.id || '';
+
+    // 获取租户列表，带上companyId参数
+    getTenantListService(companyId).then((res) => {
       this.tenantList = res.data
 
       // 打开对话框

@@ -38,8 +38,9 @@ struct LaunchPage {
           preference.setToken(res.token);
           httpRequest.setToken(res.token);
           AppStorage.SetOrCreate<UserDataType>(USER_DATA, res.data)
+          // 修改：跳转到CompanyPage而非ChatPage
           router.replaceUrl({
-            url: 'pages/ChatPage'
+            url: 'pages/CompanyPage'
           });
         }).catch(() => {
           router.replaceUrl({
@@ -51,8 +52,6 @@ struct LaunchPage {
           url: 'pages/LoginPage'
         });
       }
-
     }, 1000)
-
   }
 }

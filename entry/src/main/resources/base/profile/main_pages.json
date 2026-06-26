@@ -6,6 +6,7 @@
     "pages/RegisterPage",
     "pages/ForgetPasswordPage",
     "pages/ResetPasswordPage",
+    "pages/CompanyPage",
     "pages/UpdatePasswordPage",
     "pages/ChatPage",
     "pages/TenantManagerPage"

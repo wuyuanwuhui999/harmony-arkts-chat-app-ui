@@ -160,8 +160,9 @@ export const createDirectoryService = (directory:types.DirectoryType):Promise<ty
  * @date: 2025-08-10 18:25
  * @author wuwenqiang
  */
-export const getTenantListService = ():Promise<types.MyAwesomeData<types.TenantType[]>> => {
-  return httpRequest.get<types.TenantType[]>(api.getUserTenantList);
+export const getTenantListService = (companyId?: string): Promise<types.MyAwesomeData<types.TenantType[]>> => {
+  const url = companyId ? `${api.getUserTenantList}?companyId=${companyId}` : api.getUserTenantList;
+  return httpRequest.get<types.TenantType[]>(url);
 }
 
 /**
@@ -245,4 +246,13 @@ export const getPromptService = (tenantId: string): Promise<types.MyAwesomeData<
  */
 export const updatePromptService = (promptData: types.PromptInterface): Promise<types.MyAwesomeData<types.PromptInterface>> => {
   return httpRequest.put<types.PromptInterface>(api.updatePrompt, promptData);
+}
+
+/**
+ * @description: 获取公司列表
+ * @date: 2026-06-25
+ * @author wuwenqiang
+ */
+export const getCompanyListService = (): Promise<types.MyAwesomeData<types.CompanyType[]>> => {
+  return httpRequest.get<types.CompanyType[]>(api.getCompanyList);
 }

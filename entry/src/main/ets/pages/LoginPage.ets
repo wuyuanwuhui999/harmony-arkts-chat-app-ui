@@ -25,7 +25,7 @@ struct LoginPage {
   private loadingController: LoadingController = new LoadingController()
 
   async aboutToAppear() {
-    this.userAccount = this.userData?.userAccount || "吴时吴刻";
+    this.userAccount = this.userData?.userAccount || "吴怨吴悔";
     this.password = await preference.getPassword(this.userData?.userAccount!) as string || "123456";
   }
 
@@ -81,8 +81,9 @@ struct LoginPage {
         await preference.setToken(res.token);
         httpRequest.setToken(res.token);
         AppStorage.SetOrCreate<UserDataType>(USER_DATA, res.data)
+        // 修改：跳转到CompanyPage
         router.replaceUrl({
-          url: 'pages/ChatPage', // 目标url
+          url: 'pages/CompanyPage',
         });
       }).catch((e: Error) => {
         console.log("错误",e)
@@ -118,7 +119,7 @@ struct LoginPage {
         httpRequest.setToken(res.token);
         AppStorage.SetOrCreate<UserDataType>(USER_DATA, res.data)
         router.replaceUrl({
-          url: 'pages/ChatPage', // 目标url
+          url: 'pages/CompanyPage', // 目标url
         });
       }).catch(() => {
         promptAction.showToast({

@@ -109,13 +109,16 @@ struct RegisterPage {
         this.loading = false;
         return
       }
+      // ets/pages/RegisterPage.ets - 修改注册成功后的跳转
+
       registerService(this.userData).then(async res => {
         preference.setPassword(this.userData.userAccount, this.userData.password)
         preference.setToken(res.token);
         httpRequest.setToken(res.token);
         AppStorage.SetOrCreate<UserDataType>(USER_DATA, res.data)
+        // 修改：跳转到CompanyPage
         router.replaceUrl({
-          url: 'pages/ChatPage', // 目标url
+          url: 'pages/CompanyPage',
         }, router.RouterMode.Single, (err) => {
           if (err) {
             console.error(`Invoke showAlertBeforeBackPage failed, code is ${err.code}, message is ${err.message}`);

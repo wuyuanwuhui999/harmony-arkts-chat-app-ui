@@ -45,8 +45,8 @@
   - `total`: 分页接口返回总条数，非分页接口为 `null`
   - `msg`: 失败时的服务器信息
   - `status`: `"SUCCESS"` 表示成功，其他表示失败
-- 请求头要求：
-  - 除登录接口外，所有请求需添加 `Authorization: Bearer token`
+- 请求方法
+  - 所有请求后端方法都放到 `service/inde.ets`中，使用通用网络请求对象httpRequest进行网络请求
 
 # 代码输出要求
 1. **文件大小限制**：

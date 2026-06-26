@@ -64,18 +64,17 @@ struct LoginPage {
           duration: 2000,
           bottom: px2vp(display.getDefaultDisplaySync().height) / 2
         });
-        router.pushUrl({
-          url: 'pages/ResetPasswordPage', // 目标url
-          params: {
-            email: this.email
-          }
+        // 修改：跳转到CompanyPage
+        router.replaceUrl({
+          url: 'pages/CompanyPage',
         }, router.RouterMode.Single, (err) => {
           if (err) {
             console.error(`Invoke showAlertBeforeBackPage failed, code is ${err.code}, message is ${err.message}`);
           }
         });
+        router.clear();
       }).finally(() => {
-        this.loadingController.showLoading();
+        this.loadingController.hideLoading();
         this.loading = false;
       })
     }

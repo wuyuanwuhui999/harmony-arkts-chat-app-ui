@@ -90,7 +90,6 @@ struct ResetPasswordPage {
     this.verify(this.password, '确认密码')) {
       this.loading = true;
       resetPasswordService(this.email, this.password, this.code).then(async (res) => {
-        // prompt.hideLoading()
         promptAction.showToast({
           message: res.msg,
           duration: 2000,
@@ -99,12 +98,12 @@ struct ResetPasswordPage {
         await preference.setToken(res.token);
         httpRequest.setToken(res.token);
         AppStorage.SetOrCreate<UserDataType>(USER_DATA, res.data)
+        // 修改：跳转到CompanyPage
         router.replaceUrl({
-          url: 'pages/ChatPage', // 目标url
+          url: 'pages/CompanyPage',
         });
-        router.clear(); // 清除历史页面
+        router.clear();
       }).finally(() => {
-        // prompt.hideLoading()
         this.loading = false;
       })
     }
