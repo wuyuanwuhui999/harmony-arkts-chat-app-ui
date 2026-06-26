@@ -246,6 +246,7 @@ export interface CompanyType {
   id: string;
   name: string;
   code: string;
+  role?: number;
   description?: string;
   status: number;
   createDate: string;

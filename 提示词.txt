@@ -2,9 +2,26 @@
 你是一个资深的 harmony arkts 鸿蒙原生开发专家，严格遵守以下规范，为我的 App 实现功能。
 
 # 核心任务
-根据以下要求，生成符合规范的代码：
-1. [请在此处填写您的第一个具体功能，例如：实现一个从服务器获取商品列表并展示的页面]
-2. [请在此处填写您的第二个具体功能，例如：实现一个带有搜索框和筛选按钮的顶部栏]
+阅读 `txt` 文档里面的ets源代码，根据以下要求，生成符合规范的代码：
+- UserPage页面切换公司按钮下方添加一个用户管理按钮，样式跟修改密码样式相同，退出登陆按钮到最下面，根据CompanyPage中选择的company对象中的role字段判断当前登录人是系统管理员或超级管理员，当前登录人是系统管理员或超级管理员才能显示用户按钮，点击添加用户管理，跳转到UserManagePage页面，Company模型增加一个positionId字段，根据company.role判断角色，普通管理员role=1，超级管理员role=2，判断role大于0即可显示用户管理按钮
+- positionId是职务字段，字符串类型
+- UserManagePage.kt页面没有开发，帮我新建一个UserManagePage页面，UserManagePage用户管理页面与TenantManagePage页面样式相同
+- UserManagePage.kt页面标题栏显示标题名称为：用户管理，标题栏右边显示一个加号图标，内容区背景是灰色，设置内容区标准内边距，内容区有一个胶囊型搜索框，搜索框下方是用户列表，用户列表是显示该公司下的用户，调用接口获取该公司下的用户，接口地址是：/service/company/getCompanyUsers?companyId={companyId}&pageSize={pageSize}&pageNum={pageNum}&keyword={keyword}，返回的data是User对象数组，支持往上滚动分页加载，用户列表显示用户头像和用户姓名，用户姓名下面显示用户工号，用户工号显示灰色，右边如果是管理员，显示管理员小标签
+- 用户列表做成抽屉式，向左滑动用户记录显示设为管理员/取消管理员按钮，如果该用户是管理员而且当前登录人是超级管理员，才能显示取消管理员；如果该用户不是管理员而且当前登录人是超级管理员，才能显示设为管理员；当前登录人是普通管理员，不要显示设为管理员/取消管理员按钮
+- 设为管理员/取消管理员按钮右边是一个红色的删除按钮，当前登录人是普通管理员和超级管理员都可以显示删除按钮，点击删除按钮，弹出警告框提示是否删除用户；点击确定之后，调用服务接口：/service/company/removeUser/{userId}/{companyId}，请求方式是delete，返回的data大于0表示删除成功，弹出提示删除用户成功，失败弹出返回结果的msg提示
+- getCompanyUsers接口keyword接口可以为空，点击搜素按钮，调用getCompanyUsers查询当前公司内的用户，显示在用户列表中
+- 点击标题栏右边的加号图标，跳转到AddUserPage页面，AddUserPage页面没有开发，AddUserPage页面跟AddTenantUserPage页面相似，标题栏显示添加用户，内容区背景是灰色，内容区里面有一个胶囊型搜索框，搜索框下面是一个搜索结果用户列表
+- 在AddUserPage里面输入关键字搜索时，调用接口：/service/user/searchUsers?companyId={companyId}&pageNum={pageNum}&pageSize={pageSize}，支持往上滚动分页加载，返回的data是一个User对象用户列表，但比User对象中多了一个checked字段，可以新建一个模型继承User模型处理搜索接口返回的数据，checked：0表示该用户不在该公司中，搜索结果用户列表中显示激活的添加按钮，checked=1表示该用户已经在该公司中，搜索结果用户列表中显示灰色的已添加按钮
+- 用户列表中每一条记录用一条横线隔开
+- 点击搜索结果中的添加按钮，弹出对话框，对话框中如果当前用户是超级管理员，显示角色单选项：普通用户/管理员，默认选中普通用户，普通管理员不能设置role角色，普通管理员只能设置普通用户，只有超级管理员才显示角色选项
+- 角色下面显示一个部门选择框，调用接口获取所有部门，接口地址如下/service/company/getDepartments?companyId={companyId},返回的data是部门列表，部门结构如下
+{id,companyId,departmentName,description,createTime}
+- 部门选择框下面是职位选择框，选择了部门之后，调用后端接口获取部门下面的所有职位，获取职位接口：/service/company/getPositions?departmentId={departmentId}，返回的data是职位列表，职位结构如下
+{id,positionName,departmentId,description,createTime}
+- 选择了部门和职位之后点击对话框中的确定按钮，调用接口：调用接口：/service/company/addUser，请求方式是post,请求参数如下
+{userId,companyId,role,positionId}，role:1管理员，role=0普通用户，role只能设置0和1，当前登录人是普通管理员不能设置role=1，超级管理员才能设置role=2
+- 如果当前用户是普通管理员role=1，添加添加按钮，不要弹出选项，直接调用addUser接口保存用户
+- 返回结果的data>0表示添加成功，添加按钮变成灰色，按钮文字变成已添加
 
 # 开发规范（必须严格遵守）
 

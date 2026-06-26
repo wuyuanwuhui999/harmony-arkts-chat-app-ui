@@ -1,3 +1,4 @@
+// ets/pages/UserPage.ets
 import router from '@ohos.router';
 import { TenantUserType, UserDataType, TenantType, TenantStatus} from "../type/Index";
 import * as colors from '../theme/color';
@@ -127,6 +128,20 @@ struct UserPage {
     return defaultTenantUser
   }
 
+  /**
+   * @author: wuwenqiang
+   * @description: 跳转到公司切换页面（带参数标识来源）
+   * @date: 2026-06-26
+   */
+  goToCompanyPage() {
+    router.pushUrl({
+      url: 'pages/CompanyPage',
+      params: {
+        fromUserPage: true // 标识从UserPage跳转过来
+      }
+    });
+  }
+
   build() {
     Column() {
       NavigatorTitleComponent({ title: "用户信息" })
@@ -224,6 +239,24 @@ struct UserPage {
               router.pushUrl({
                 url: 'pages/UpdatePasswordPage', // 目标url
               });
+            })
+
+          // 新增：切换公司/个人空间按钮
+          Text('切换公司/个人空间')
+            .padding(size.smallGap)
+            .border({
+              width: 1,
+              color: colors.borderColor,
+              style: BorderStyle.Solid
+            })
+            .backgroundColor(colors.white)
+            .borderRadius(size.middleBorderRaduis * 2)
+            .width('100%')
+            .padding(size.middleGap)
+            .textAlign(TextAlign.Center)
+            .margin({ top: size.middleGap})
+            .onClick(() => {
+              this.goToCompanyPage();
             })
 
           if(this.tenantUser.roleType > 1){
