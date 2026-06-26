@@ -1,3 +1,4 @@
+// ets/pages/AddCompanyUserPage.ets
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import router from '@ohos.router';
@@ -31,10 +32,14 @@ struct AddCompanyUserPage {
   @State total: number = 0;
   @State showLoading: boolean = false;
   @State isSuperAdmin: boolean = false;
+  /** 是否已加载全部数据 */
+  @State hasLoadedAll: boolean = false;
   private loadingController: LoadingController = new LoadingController();
   private dialogController: CustomDialogController | null = null;
   private companyId: string = '';
   private companyRole: number = 0;
+  /** 防抖定时器 */
+  private searchTimer: number = 0;
   // 添加用户弹窗相关状态
   private selectedUserId: string = '';
   private selectedRole: number = 0;
@@ -70,60 +75,115 @@ struct AddCompanyUserPage {
   }
 
   /**
-   * @description: 搜索用户
+   * @description: 搜索用户（防抖版本，关键词变化时触发）
    * @date: 2026-06-26
    * @author wuwenqiang
    */
-  searchUsers() {
+  private debounceSearch(): void {
+    // 清除之前的定时器
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = 0;
+    }
+
+    // 如果关键词为空，清空搜索列表并重置状态
     if (!this.keyword.trim()) {
-      promptAction.showToast({
-        message: '请输入搜索关键字',
-        duration: 2000,
-        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-      });
+      this.searchUserList = [];
+      this.total = 0;
+      this.pageNum = 1;
+      this.hasLoadedAll = false;
       return;
     }
 
-    this.pageNum = 1;
-    this.loadingController.showLoading();
-    searchUsersByCompanyService(this.companyId, this.keyword.trim(), this.pageNum, PAGE_SIZE)
-      .then((res) => {
-        this.total = res.total;
-        this.searchUserList = res.data || [];
-      })
-      .catch((err: Error) => {
-        console.error('搜索用户失败:', JSON.stringify(err));
-        promptAction.showToast({
-          message: '搜索用户失败，请重试',
-          duration: 2000,
-          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-        });
-      })
-      .finally(() => {
-        this.loadingController.hideLoading();
-      });
-  }
-
-  /**
-   * @description: 加载更多搜索结果
-   * @date: 2026-06-26
-   * @author wuwenqiang
-   */
-  loadMore() {
-    if (this.total > this.pageNum * PAGE_SIZE) {
-      this.pageNum++;
+    // 设置防抖延迟（300ms）
+    this.searchTimer = setTimeout(() => {
+      this.pageNum = 1;
+      this.hasLoadedAll = false;
       this.loadingController.showLoading();
       searchUsersByCompanyService(this.companyId, this.keyword.trim(), this.pageNum, PAGE_SIZE)
         .then((res) => {
-          this.searchUserList = this.searchUserList.concat(res.data || []);
+          this.total = res.total;
+          this.searchUserList = res.data || [];
+          // 判断是否已加载全部数据
+          this.hasLoadedAll = this.searchUserList.length >= this.total;
         })
         .catch((err: Error) => {
-          console.error('加载更多失败:', JSON.stringify(err));
+          console.error('搜索用户失败:', JSON.stringify(err));
+          promptAction.showToast({
+            message: '搜索用户失败，请重试',
+            duration: 2000,
+            bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+          });
         })
         .finally(() => {
           this.loadingController.hideLoading();
         });
+    }, 300);
+  }
+
+  /**
+   * @description: 清空搜索关键词并清除搜索结果
+   * @date: 2026-06-26
+   * @author wuwenqiang
+   */
+  private clearSearch(): void {
+    this.keyword = '';
+    this.searchUserList = [];
+    this.total = 0;
+    this.pageNum = 1;
+    this.hasLoadedAll = false;
+    // 清除防抖定时器
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = 0;
     }
+  }
+
+  /**
+   * @description: 加载更多搜索结果（滚动分页）
+   * @date: 2026-06-26
+   * @author wuwenqiang
+   */
+  private loadMore(): void {
+    // 如果已加载全部或没有更多数据，直接返回
+    if (this.hasLoadedAll || this.total === 0) {
+      return;
+    }
+
+    // 检查是否还有更多数据
+    if (this.searchUserList.length >= this.total) {
+      this.hasLoadedAll = true;
+      return;
+    }
+
+    // 检查当前页是否已加载完
+    if (this.pageNum * PAGE_SIZE >= this.total) {
+      this.hasLoadedAll = true;
+      return;
+    }
+
+    this.pageNum++;
+    this.loadingController.showLoading();
+    searchUsersByCompanyService(this.companyId, this.keyword.trim(), this.pageNum, PAGE_SIZE)
+      .then((res) => {
+        const newData = res.data || [];
+        this.searchUserList = this.searchUserList.concat(newData);
+        // 判断是否已加载全部数据
+        this.hasLoadedAll = this.searchUserList.length >= this.total;
+      })
+      .catch((err: Error) => {
+        console.error('加载更多失败:', JSON.stringify(err));
+        promptAction.showToast({
+          message: '加载更多失败，请重试',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+        // 加载失败时回退页码
+        this.pageNum--;
+      })
+      .finally(() => {
+        this.loadingController.hideLoading();
+      });
   }
 
   /**
@@ -162,7 +222,7 @@ struct AddCompanyUserPage {
    */
   showAddUserDialog(user: SearchUserType) {
     this.selectedUserId = user.id || '';
-    this.selectedRole = 0;
+    this.selectedRole = 0; // 默认角色为普通用户
     this.selectedDepartmentId = '';
     this.selectedPositionId = '';
     this.positionList = [];
@@ -170,17 +230,13 @@ struct AddCompanyUserPage {
     // 加载部门列表
     this.loadDepartments();
 
-    // 如果是超级管理员，显示带角色选项的对话框
-    if (this.isSuperAdmin) {
-      this.dialogController = new CustomDialogController({
-        customStyle: true,
-        builder: this.addUserDialogBuilder(),
-        alignment: DialogAlignment.Center,
-      });
-    } else {
-      // 普通管理员直接添加
-      this.addUserDirect(0);
-    }
+    // 无论是否是超级管理员，都打开对话框
+    // 如果是超级管理员，显示角色选项；如果是普通管理员，不显示角色选项
+    this.dialogController = new CustomDialogController({
+      customStyle: true,
+      builder: this.addUserDialogBuilder(),
+      alignment: DialogAlignment.Center,
+    });
     this.dialogController?.open();
   }
 
@@ -559,6 +615,29 @@ struct AddCompanyUserPage {
     }
   }
 
+  /**
+   * @description: 底部加载状态提示
+   * @date: 2026-06-26
+   * @author wuwenqiang
+   */
+  @Builder
+  loadMoreFooter() {
+    if (this.searchUserList.length > 0) {
+      Column() {
+        Text(this.hasLoadedAll ? '已加载全部数据' : '加载中...')
+          .fontColor(colors.gray)
+          .fontSize(size.middleFont)
+          .padding({
+            top: size.middleGap,
+            bottom: size.middleGap
+          })
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+    }
+  }
+
   build() {
     Stack() {
       Column() {
@@ -568,7 +647,7 @@ struct AddCompanyUserPage {
         })
 
         // 内容区
-        Column({space:size.middleGap}) {
+        Column({space: size.middleGap}) {
           Row() {
             TextInput({
               placeholder: '请输入用户姓名/工号/电话/邮箱',
@@ -579,9 +658,37 @@ struct AddCompanyUserPage {
               .backgroundColor(Color.Transparent)
               .onChange((value) => {
                 this.keyword = value;
+                // 输入变化时触发防抖搜索
+                this.debounceSearch();
               })
               .onSubmit(() => {
-                this.searchUsers();
+                // 回车键触发立即搜索（取消防抖）
+                if (this.searchTimer) {
+                  clearTimeout(this.searchTimer);
+                  this.searchTimer = 0;
+                }
+                if (this.keyword.trim()) {
+                  this.pageNum = 1;
+                  this.hasLoadedAll = false;
+                  this.loadingController.showLoading();
+                  searchUsersByCompanyService(this.companyId, this.keyword.trim(), this.pageNum, PAGE_SIZE)
+                    .then((res) => {
+                      this.total = res.total;
+                      this.searchUserList = res.data || [];
+                      this.hasLoadedAll = this.searchUserList.length >= this.total;
+                    })
+                    .catch((err: Error) => {
+                      console.error('搜索用户失败:', JSON.stringify(err));
+                      promptAction.showToast({
+                        message: '搜索用户失败，请重试',
+                        duration: 2000,
+                        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+                      });
+                    })
+                    .finally(() => {
+                      this.loadingController.hideLoading();
+                    });
+                }
               })
 
             if (this.keyword) {
@@ -590,7 +697,8 @@ struct AddCompanyUserPage {
                 .height(size.smallIcon)
                 .margin({ left: size.smallGap })
                 .onClick(() => {
-                  this.keyword = '';
+                  // 清空搜索关键词和搜索结果
+                  this.clearSearch();
                 })
             }
 
@@ -599,10 +707,36 @@ struct AddCompanyUserPage {
               .height(size.smallIcon)
               .margin({ left: size.smallGap, right: size.middleGap })
               .onClick(() => {
-                this.searchUsers();
+                // 点击搜索按钮触发立即搜索（取消防抖）
+                if (this.searchTimer) {
+                  clearTimeout(this.searchTimer);
+                  this.searchTimer = 0;
+                }
+                if (this.keyword.trim()) {
+                  this.pageNum = 1;
+                  this.hasLoadedAll = false;
+                  this.loadingController.showLoading();
+                  searchUsersByCompanyService(this.companyId, this.keyword.trim(), this.pageNum, PAGE_SIZE)
+                    .then((res) => {
+                      this.total = res.total;
+                      this.searchUserList = res.data || [];
+                      this.hasLoadedAll = this.searchUserList.length >= this.total;
+                    })
+                    .catch((err: Error) => {
+                      console.error('搜索用户失败:', JSON.stringify(err));
+                      promptAction.showToast({
+                        message: '搜索用户失败，请重试',
+                        duration: 2000,
+                        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+                      });
+                    })
+                    .finally(() => {
+                      this.loadingController.hideLoading();
+                    });
+                }
               })
           }
-          .margin({top:size.middleGap})
+          .margin({top: size.middleGap})
           .backgroundColor(colors.white)
           .borderRadius(size.inputHeight / 2)
           .width('100%')
@@ -610,9 +744,19 @@ struct AddCompanyUserPage {
           .alignItems(VerticalAlign.Center)
 
           // 用户列表
-          if (this.searchUserList.length === 0) {
+          if (this.searchUserList.length === 0 && !this.keyword.trim()) {
             Column() {
-              Text(this.keyword ? '未找到相关用户' : '请输入关键字搜索用户')
+              Text('请输入关键字搜索用户')
+                .fontColor(colors.gray)
+                .padding(size.middleGap)
+            }
+            .width('100%')
+            .layoutWeight(1)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
+          } else if (this.searchUserList.length === 0 && this.keyword.trim()) {
+            Column() {
+              Text('未找到相关用户')
                 .fontColor(colors.gray)
                 .padding(size.middleGap)
             }
@@ -629,14 +773,16 @@ struct AddCompanyUserPage {
               })
             }
             .width('100%')
-            .padding({left:size.middleGap,right:size.middleGap})
+            .padding({left: size.middleGap, right: size.middleGap})
             .backgroundColor(colors.white)
             .borderRadius(size.middleBorderRaduis)
             .onScrollIndex((start: number, end: number) => {
-              if (end >= this.searchUserList.length - 3) {
+              // 滚动到底部时加载更多
+              if (end >= this.searchUserList.length - 1 && this.keyword.trim()) {
                 this.loadMore();
               }
             })
+            this.loadMoreFooter()
           }
         }
         .width('100%')
