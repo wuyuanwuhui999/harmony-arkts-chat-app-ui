@@ -115,8 +115,11 @@ export const getChatHistoryService = (tenantId:string,pageNum:number,pageSize:nu
  * @date: 2025-05-16 00:19
  * @author wuwenqiang
  */
-export const getModelListService = ():Promise<types.MyAwesomeData<Array<types.ChatModelType>>> => {
-  return httpRequest.get<Array<types.ChatModelType>>(api.getModelList)
+export const getModelListService = (companyId?: string): Promise<types.MyAwesomeData<Array<types.ChatModelType>>> => {
+  const url = companyId ? `${api.getModelList}?companyId=${companyId}` : api.getModelList;
+  console.log('[Service] getModelListService 请求URL:', url);
+  console.log('[Service] getModelListService 参数 companyId:', companyId);
+  return httpRequest.get<Array<types.ChatModelType>>(url);
 }
 
 /**
@@ -162,6 +165,8 @@ export const createDirectoryService = (directory:types.DirectoryType):Promise<ty
  */
 export const getTenantListService = (companyId?: string): Promise<types.MyAwesomeData<types.TenantType[]>> => {
   const url = companyId ? `${api.getUserTenantList}?companyId=${companyId}` : api.getUserTenantList;
+  console.log('[Service] getTenantListService 请求URL:', url);
+  console.log('[Service] getTenantListService 参数 companyId:', companyId);
   return httpRequest.get<types.TenantType[]>(url);
 }
 

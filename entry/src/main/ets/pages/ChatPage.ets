@@ -107,12 +107,99 @@ export default struct ChatPage {
   }
 
   async aboutToAppear() {
-    await this.getStorageTenant();
-    getModelListService().then((res) => {
-      this.modelList = res.data;
-      this.activeModelName = res.data[0].modelName;
-    })
-    // 在租户信息加载完成后获取提示词
+    const companyData = AppStorage.get<CompanyType>(COMPANY_DATA);
+
+    // 1. 先获取公司ID
+    const companyId = companyData?.id || '';
+
+    // 2. 获取租户列表
+    try {
+      const tenantListRes = await getTenantListService(companyId);
+
+      if (tenantListRes.data && tenantListRes.data.length > 0) {
+        this.tenantList = tenantListRes.data;
+
+        // 3. 从缓存获取上次保存的租户ID
+        const cachedTenantId = await preference.getPreference(`${this.userData.id}:tenantId`);
+
+        let selectedTenant: TenantType | null = null;
+
+        // 4. 如果缓存中有租户ID，在列表中查找
+        if (cachedTenantId) {
+          selectedTenant = this.tenantList.find(item => item.id === cachedTenantId) || null;
+        }
+
+        // 5. 如果找不到或没有缓存，取第一条
+        if (!selectedTenant) {
+          selectedTenant = this.tenantList[0];
+        }
+
+        // 6. 设置当前租户
+        if (selectedTenant) {
+          await this.switchTenant(selectedTenant);
+        }
+      } else {
+        // 使用默认租户
+        const defaultTenantUser = this.getDefaultTenantUser();
+        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, defaultTenantUser);
+      }
+    } catch (error) {
+      // 使用默认租户
+      const defaultTenantUser = this.getDefaultTenantUser();
+      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, defaultTenantUser);
+    }
+
+    // 7. 获取模型列表 - 传入 companyId
+    getModelListService(companyId).then((res) => {
+      if (res.data && res.data.length > 0) {
+        this.modelList = res.data;
+        this.activeModelName = res.data[0].modelName;
+      }
+    }).catch((err: Error) => {
+      console.error('[ChatPage] 获取模型列表失败:', JSON.stringify(err));
+    });
+
+    // 8. 在租户信息加载完成后获取提示词
+    await this.getPrompt();
+  }
+
+  /**
+   * @author: system
+   * @description: 切换租户
+   * @date: 2026-06-26
+   */
+  switchTenant = async (tenant: TenantType): Promise<void> => {
+
+    // 如果选择的是私人空间（id为空），使用默认租户
+    if (!tenant.id || tenant.id === "") {
+      const defaultTenantUser = this.getDefaultTenantUser();
+      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, defaultTenantUser);
+      // 保存到缓存
+      await preference.putPreference(`${this.userData.id}:tenantId`, "");
+      return;
+    }
+
+    // 获取租户用户信息
+    try {
+      const res = await getTenantUserService(tenant.id);
+      if (res.data) {
+        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, res.data);
+      } else {
+        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
+      }
+    } catch (error) {
+      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
+    }
+
+    // 保存租户ID到缓存
+    await preference.putPreference(`${this.userData.id}:tenantId`, tenant.id);
+
+    // 获取公司ID，刷新模型列表
+    const companyData = AppStorage.get<CompanyType>(COMPANY_DATA);
+    const companyId = companyData?.id || '';
+    this.refreshModelList(companyId);
+
+    // 重新加载提示词
     await this.getPrompt();
   }
 
@@ -196,33 +283,6 @@ export default struct ChatPage {
       });
       // 发起连接
       this.ws.connect(url);
-    });
-  }
-
-  /**
-   * @author: wuwenqiang
-   * @description: 获取租户信息
-   * @date: 2025-8-10 18:06
-   */
-  getStorageTenant = (): Promise<void> => {
-    return preference.getTenantId(this.userData.id!).then(async (res) => {
-      if (res !== undefined && res !== null && res !== "") {
-        await getTenantUserService(res).then((respone) => {
-          if (respone.data) {
-            AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, respone.data as TenantUserType);
-          } else {
-            AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
-          }
-        })
-      } else {
-        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
-      }
-      // 租户切换后重新加载提示词
-      await this.getPrompt();
-    }).catch(() => {
-      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
-      // 租户切换后重新加载提示词
-      this.getPrompt();
     });
   }
 
@@ -1022,8 +1082,6 @@ export default struct ChatPage {
     .width("100%").height("100%")
   }
 
-  // ets/pages/ChatPage.ets - 修改 showTenantDialog 方法
-
   /**
    * @author: system
    * @description: 显示租户切换对话框
@@ -1034,29 +1092,47 @@ export default struct ChatPage {
     const companyData = AppStorage.get<CompanyType>(COMPANY_DATA);
     const companyId = companyData?.id || '';
 
-    // 获取租户列表，带上companyId参数
-    getTenantListService(companyId).then((res) => {
-      this.tenantList = res.data
+    // 如果租户列表为空，重新获取
+    if (this.tenantList.length === 0) {
+      getTenantListService(companyId).then((res) => {
+        this.tenantList = res.data || [];
+        this.openTenantDialog();
+      }).catch((error: Error) => {
+        promptAction.showToast({
+          message: "获取租户列表失败",
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+      });
+    } else {
+      this.openTenantDialog();
+    }
+  }
 
-      // 打开对话框
-      this.dialogController = new CustomDialogController({
-        customStyle: true,
-        builder: OptionDialogComponent({
-          cancel: (): void => this.onTenantDialogCancel(),
-          confirm: (value: string, index: number): void => this.onTenantSwitch(index),
-          options: this.tenantList.map(item => item.name),
-        }),
-        alignment: DialogAlignment.Bottom,
-      });
-      this.dialogController.open();
-    }).catch((error: Error) => {
-      console.error('获取租户列表失败:', JSON.stringify(error));
-      promptAction.showToast({
-        message: "获取租户列表失败",
-        duration: 2000,
-        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-      });
+  /**
+   * @author: system
+   * @description: 打开租户切换对话框
+   * @date: 2026-06-26
+   */
+  openTenantDialog = () => {
+    // 获取当前选中的租户ID
+    const currentTenantId = this.tenantUser.tenantId || this.tenantUser.id || '';
+
+    // 构建选项列表，标记当前选中的租户
+    const options = this.tenantList.map(item => {
+      return item.id === currentTenantId ? `${item.name} ✓` : item.name;
     });
+
+    this.dialogController = new CustomDialogController({
+      customStyle: true,
+      builder: OptionDialogComponent({
+        cancel: (): void => this.onTenantDialogCancel(),
+        confirm: (value: string, index: number): void => this.onTenantSwitch(index),
+        options: options,
+      }),
+      alignment: DialogAlignment.Bottom,
+    });
+    this.dialogController.open();
   }
 
   /**
@@ -1070,43 +1146,35 @@ export default struct ChatPage {
 
   /**
    * @author: system
+   * @description: 刷新模型列表
+   * @date: 2026-06-26
+   */
+  refreshModelList = (companyId?: string) => {
+    getModelListService(companyId).then((res) => {
+      if (res.data && res.data.length > 0) {
+        this.modelList = res.data;
+        this.activeModelName = res.data[0].modelName;
+      }
+    })
+  }
+
+  /**
+   * @author: system
    * @description: 切换租户
    * @date: 2026-04-29
    */
   onTenantSwitch = (index: number) => {
     const selectedTenant = this.tenantList[index];
+
     if (!selectedTenant) {
       this.dialogController?.close();
       return;
     }
 
-    // 如果选择的是私人空间（id为空），使用默认租户
-    if (selectedTenant.id === "") {
-      const defaultTenantUser = this.getDefaultTenantUser();
-      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, defaultTenantUser);
-      this.dialogController?.close();
-      // 切换租户后重新加载提示词
-      this.getPrompt();
-      return;
-    }
+    this.dialogController?.close();
 
-    // 获取租户用户信息
-    getTenantUserService(selectedTenant.id).then((res) => {
-      if (res.data) {
-        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, res.data);
-      } else {
-        // 如果获取失败，使用默认租户
-        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
-      }
-      this.dialogController?.close();
-      // 切换租户后重新加载提示词
-      this.getPrompt();
-    }).catch(() => {
-      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
-      this.dialogController?.close();
-      // 切换租户后重新加载提示词
-      this.getPrompt();
-    });
+    // 切换租户
+    this.switchTenant(selectedTenant);
   }
 
   build() {
