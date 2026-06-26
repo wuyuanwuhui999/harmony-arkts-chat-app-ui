@@ -1,9 +1,9 @@
 // ets/pages/UserPage.ets
 import router from '@ohos.router';
-import { TenantUserType, UserDataType, TenantType, TenantStatus} from "../type/Index";
+import { TenantUserType, UserDataType, TenantType, TenantStatus,CompanyType} from "../type/Index";
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
-import { USER_DATA,TENANT_USER_DATA,DEFAULT_TENANT_USER, HOST} from '../common/constant';
+import { USER_DATA,TENANT_USER_DATA,DEFAULT_TENANT_USER, HOST, COMPANY_DATA} from '../common/constant';
 import { updateUserDataService } from '../service/Index';
 import preference from '../utils/PreferenceModel';
 import OptionDialogComponent from '../components/OptionDialogComponent';
@@ -19,6 +19,7 @@ struct UserPage {
   title: string = '';
   @State field: string = '';
   dialogController: CustomDialogController | null = null
+  @StorageLink(COMPANY_DATA) companyData: CompanyType | null = null;
 
   @Styles
   blockStyle(){
@@ -259,7 +260,7 @@ struct UserPage {
               this.goToCompanyPage();
             })
 
-          if(this.tenantUser.roleType > 1){
+          if(this.tenantUser.roleType > 0){
             Text('租户管理')
               .padding(size.smallGap)
               .border({
@@ -276,6 +277,34 @@ struct UserPage {
               .onClick(() => {
                 router.pushUrl({
                   url: 'pages/TenantManagerPage', // 目标url
+                });
+              })
+          }
+
+          // 在 "切换公司/个人空间" 按钮之后，"退出登录" 按钮之前添加
+
+          // 新增：用户管理按钮（根据角色显示）
+          if (this.companyData && this.companyData.role && this.companyData.role > 0) {
+            Text('用户管理')
+              .padding(size.smallGap)
+              .border({
+                width: 1,
+                color: colors.borderColor,
+                style: BorderStyle.Solid
+              })
+              .backgroundColor(colors.white)
+              .borderRadius(size.middleBorderRaduis * 2)
+              .width('100%')
+              .padding(size.middleGap)
+              .textAlign(TextAlign.Center)
+              .margin({ top: size.middleGap})
+              .onClick(() => {
+                router.pushUrl({
+                  url: 'pages/UserManagePage',
+                  params: {
+                    companyId: this.companyData?.id,
+                    companyRole: this.companyData?.role
+                  }
                 });
               })
           }

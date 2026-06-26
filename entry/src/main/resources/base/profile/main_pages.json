@@ -9,6 +9,8 @@
     "pages/CompanyPage",
     "pages/UpdatePasswordPage",
     "pages/ChatPage",
-    "pages/TenantManagerPage"
+    "pages/TenantManagerPage",
+    "pages/AddCompanyUserPage",
+    "pages/UserManagePage"
   ]
 }

@@ -133,22 +133,18 @@ struct CompanyPage {
 
       // 单选按钮
       Stack({ alignContent: Alignment.Center }) {
-        Circle({ width: size.middleIcon, height: size.middleIcon })
+        Circle({ width: size.smallIcon, height: size.smallIcon })
           .fill(this.selectedCompanyId === item.id ? colors.primary : Color.Transparent)
           .stroke(this.selectedCompanyId === item.id ? colors.primary : colors.gray)
           .strokeWidth(2)
 
         if (this.selectedCompanyId === item.id) {
-          Circle({ width: size.smallIcon, height: size.smallIcon })
+          Circle({ width: size.smallIcon - 10, height: size.smallIcon - 10 })
             .fill(colors.white)
         }
       }
     }
     .width('100%')
-    .padding({
-      top: size.middleGap,
-      bottom: size.middleGap
-    })
     .onClick(() => {
       this.selectCompany(item.id);
     })

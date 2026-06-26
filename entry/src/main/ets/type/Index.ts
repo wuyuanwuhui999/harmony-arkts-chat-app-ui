@@ -242,15 +242,77 @@ export interface PromptInterface {
   updateTime?: string;
 }
 
+// 公司用户管理相关类型
+export interface CompanyUserType {
+  id: string;          // 用户ID
+  userId: string;      // 用户ID
+  username: string;    // 用户名
+  avater?: string;     // 头像
+  userAccount?: string;  // 工号
+  email?: string;      // 邮箱
+  telephone?: string;  // 电话
+  role: number;        // 角色: 0-普通用户, 1-管理员, 2-超级管理员
+  positionId?: string; // 职务ID
+  companyId: string;   // 公司ID
+  createTime?: string; // 创建时间
+  updateTime?: string; // 更新时间
+}
+
+// 搜索用户返回类型（带checked字段）
+export interface SearchUserType extends UserDataType {
+  checked: number;  // 0-不在该公司, 1-已在该公司
+}
+
+// 部门类型
+export interface DepartmentType {
+  id: string;
+  companyId: string;
+  departmentName: string;
+  description: string;
+  createTime: string;
+}
+
+// 职位类型
+export interface PositionType {
+  id: string;
+  positionName: string;
+  departmentId: string;
+  description: string;
+  createTime: string;
+}
+
+// 公司类型扩展 - 增加role字段
 export interface CompanyType {
   id: string;
   name: string;
   code: string;
-  role?: number;
+  role?: number;       // 当前用户在该公司的角色: 0-普通用户, 1-管理员, 2-超级管理员
+  positionId?: string; // 职务ID
   description?: string;
   status: number;
   createDate: string;
   updateDate: string;
   createdBy: string;
   updatedBy: string;
+}
+
+// 添加用户请求参数
+export interface AddCompanyUserParams {
+  userId: string;
+  companyId: string;
+  role: number;        // 0-普通用户, 1-管理员 (超级管理员可设2)
+  positionId: string;
+}
+
+// 公司用户列表查询参数
+export interface GetCompanyUsersParams {
+  companyId: string;
+  pageNum: number;
+  pageSize: number;
+  keyword?: string;
+}
+
+export interface CompanyAdminParamsType {
+  userId: string;
+  companyId: string;
 }

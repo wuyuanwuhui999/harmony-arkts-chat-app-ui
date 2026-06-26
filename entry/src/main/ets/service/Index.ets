@@ -261,3 +261,87 @@ export const updatePromptService = (promptData: types.PromptInterface): Promise<
 export const getCompanyListService = (): Promise<types.MyAwesomeData<types.CompanyType[]>> => {
   return httpRequest.get<types.CompanyType[]>(api.getCompanyList);
 }
+
+// 在文件末尾添加
+
+/**
+ * @description: 获取公司用户列表
+ * @date: 2026-06-26
+ * @author wuwenqiang
+ */
+export const getCompanyUsersService = (params: types.GetCompanyUsersParams): Promise<types.MyAwesomeData<types.CompanyUserType[]>> => {
+  const companyId = params.companyId;
+  const pageNum = params.pageNum;
+  const pageSize = params.pageSize;
+  const keyword = params.keyword;
+  let url = `${api.getCompanyUsers}?companyId=${companyId}&pageNum=${pageNum}&pageSize=${pageSize}`;
+  if (keyword) {
+    url += `&keyword=${encodeURIComponent(keyword)}`;
+  }
+  return httpRequest.get<types.CompanyUserType[]>(url);
+}
+
+/**
+ * @description: 移除公司用户
+ * @date: 2026-06-26
+ * @author wuwenqiang
+ */
+export const removeCompanyUserService = (userId: string, companyId: string): Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.delete<number>(`${api.removeCompanyUser}/${userId}/${companyId}`);
+}
+
+/**
+ * @description: 搜索用户（带companyId）
+ * @date: 2026-06-26
+ * @author wuwenqiang
+ */
+export const searchUsersByCompanyService = (companyId: string, keyword: string, pageNum: number, pageSize: number): Promise<types.MyAwesomeData<types.SearchUserType[]>> => {
+  return httpRequest.get<types.SearchUserType[]>(`${api.searchUsers}?companyId=${companyId}&keyword=${encodeURIComponent(keyword)}&pageNum=${pageNum}&pageSize=${pageSize}`);
+}
+
+/**
+ * @description: 添加公司用户
+ * @date: 2026-06-26
+ * @author wuwenqiang
+ */
+export const addCompanyUserService = (params: types.AddCompanyUserParams): Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.post<number>(api.addCompanyUser, params);
+}
+
+/**
+ * @description: 获取部门列表
+ * @date: 2026-06-26
+ * @author wuwenqiang
+ */
+export const getDepartmentsService = (companyId: string): Promise<types.MyAwesomeData<types.DepartmentType[]>> => {
+  return httpRequest.get<types.DepartmentType[]>(`${api.getDepartments}?companyId=${companyId}`);
+}
+
+/**
+ * @description: 获取职位列表
+ * @date: 2026-06-26
+ * @author wuwenqiang
+ */
+export const getPositionsService = (departmentId: string): Promise<types.MyAwesomeData<types.PositionType[]>> => {
+  return httpRequest.get<types.PositionType[]>(`${api.getPositions}?departmentId=${departmentId}`);
+}
+
+/**
+ * @description: 设为管理员
+ * @date: 2026-06-26
+ * @author wuwenqiang
+ */
+export const setAdminService = (userId: string, companyId: string): Promise<types.MyAwesomeData<number>> => {
+  const params: types.CompanyAdminParamsType = { userId, companyId };
+  return httpRequest.post<number>(api.setAdmin, params);
+}
+
+/**
+ * @description: 取消管理员
+ * @date: 2026-06-26
+ * @author wuwenqiang
+ */
+export const cancelAdminService = (userId: string, companyId: string): Promise<types.MyAwesomeData<number>> => {
+  const params: types.CompanyAdminParamsType = { userId, companyId };
+  return httpRequest.post<number>(api.cancelAdmin, params);
+}

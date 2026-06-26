@@ -31,4 +31,12 @@ export default {
   getPrompt: '/service/prompt/getPrompt', // 获取提示词
   updatePrompt: '/service/prompt/updatePrompt', // 更新提示词
   getCompanyList: '/service/company/getCompanyList', // 获取公司列表
+
+  getCompanyUsers: '/service/company/getCompanyUsers',      // 获取公司用户列表
+  removeCompanyUser: '/service/company/removeUser',         // 移除公司用户
+  addCompanyUser: '/service/company/addUser',              // 添加公司用户
+  getDepartments: '/service/company/getDepartments',        // 获取部门列表
+  getPositions: '/service/company/getPositions',            // 获取职位列表
+  setAdmin: '/service/company/setAdmin',                   // 设为管理员
+  cancelAdmin: '/service/company/cancelAdmin',             // 取消管理员
 };
