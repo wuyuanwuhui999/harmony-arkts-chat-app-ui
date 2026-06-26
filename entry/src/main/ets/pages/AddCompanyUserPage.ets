@@ -568,7 +568,7 @@ struct AddCompanyUserPage {
         })
 
         // 内容区
-        Column() {
+        Column({space:size.middleGap}) {
           Row() {
             TextInput({
               placeholder: '请输入用户姓名/工号/电话/邮箱',
@@ -629,7 +629,7 @@ struct AddCompanyUserPage {
               })
             }
             .width('100%')
-            .layoutWeight(1)
+            .padding({left:size.middleGap,right:size.middleGap})
             .backgroundColor(colors.white)
             .borderRadius(size.middleBorderRaduis)
             .onScrollIndex((start: number, end: number) => {
