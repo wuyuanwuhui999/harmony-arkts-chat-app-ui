@@ -255,7 +255,7 @@ struct AddCompanyUserPage {
   @Builder
   addUserDialogBuilder() {
     Column({ space: size.middleGap }) {
-      Text('添加用户')
+      Text('选择部门和岗位')
         .fontSize(size.bigFont)
         .fontWeight(FontWeight.Medium)
         .margin({ top: size.middleGap })
