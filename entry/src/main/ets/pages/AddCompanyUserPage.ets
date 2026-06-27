@@ -43,10 +43,14 @@ struct AddCompanyUserPage {
   // 添加用户弹窗相关状态
   private selectedUserId: string = '';
   private selectedRole: number = 0;
-  private departmentList: DepartmentType[] = [];
-  private positionList: PositionType[] = [];
   private selectedDepartmentId: string = '';
   private selectedPositionId: string = '';
+  // 对话框内部状态（使用 @State 确保 UI 响应式更新）
+  @State dialogSelectedDepartmentId: string = '';
+  @State dialogSelectedPositionId: string = '';
+  @State dialogSelectedRole: number = 0;
+  @State dialogDepartmentList: DepartmentType[] = [];
+  @State dialogPositionList: PositionType[] = [];
 
   @StorageLink(COMPANY_DATA) companyData: CompanyType | null = null;
 
@@ -187,57 +191,60 @@ struct AddCompanyUserPage {
   }
 
   /**
-   * @description: 加载部门列表
+   * @description: 显示添加用户对话框
    * @date: 2026-06-26
    * @author wuwenqiang
    */
-  loadDepartments() {
+  showAddUserDialog(user: SearchUserType) {
+    // 重置对话框状态
+    this.selectedUserId = user.id || '';
+    this.dialogSelectedRole = 0; // 默认角色为普通用户
+    this.dialogSelectedDepartmentId = '';
+    this.dialogSelectedPositionId = '';
+    this.dialogPositionList = [];
+
+    // 加载部门列表
+    this.loadDepartmentListForDialog();
+
+    // 创建对话框控制器
+    this.dialogController = new CustomDialogController({
+      customStyle: true,
+      builder: () => {
+        this.addUserDialogBuilder();
+      },
+      alignment: DialogAlignment.Center,
+      autoCancel: true,
+    });
+    this.dialogController?.open();
+  }
+
+  /**
+   * @description: 加载部门列表（用于对话框）
+   * @date: 2026-06-26
+   * @author wuwenqiang
+   */
+  loadDepartmentListForDialog() {
     getDepartmentsService(this.companyId).then((res) => {
-      this.departmentList = res.data || [];
+      this.dialogDepartmentList = res.data || [];
     }).catch((err: Error) => {
       console.error('获取部门列表失败:', JSON.stringify(err));
     });
   }
 
   /**
-   * @description: 加载职位列表
+   * @description: 加载职位列表（用于对话框）
    * @date: 2026-06-26
    * @author wuwenqiang
    */
-  loadPositions(departmentId: string) {
-    this.selectedDepartmentId = departmentId;
-    this.selectedPositionId = '';
-    this.positionList = [];
+  loadPositionListForDialog(departmentId: string) {
+    this.dialogSelectedDepartmentId = departmentId;
+    this.dialogSelectedPositionId = '';
+    this.dialogPositionList = [];
     getPositionsService(departmentId).then((res) => {
-      this.positionList = res.data || [];
+      this.dialogPositionList = res.data || [];
     }).catch((err: Error) => {
       console.error('获取职位列表失败:', JSON.stringify(err));
     });
-  }
-
-  /**
-   * @description: 显示添加用户对话框
-   * @date: 2026-06-26
-   * @author wuwenqiang
-   */
-  showAddUserDialog(user: SearchUserType) {
-    this.selectedUserId = user.id || '';
-    this.selectedRole = 0; // 默认角色为普通用户
-    this.selectedDepartmentId = '';
-    this.selectedPositionId = '';
-    this.positionList = [];
-
-    // 加载部门列表
-    this.loadDepartments();
-
-    // 无论是否是超级管理员，都打开对话框
-    // 如果是超级管理员，显示角色选项；如果是普通管理员，不显示角色选项
-    this.dialogController = new CustomDialogController({
-      customStyle: true,
-      builder: this.addUserDialogBuilder(),
-      alignment: DialogAlignment.Center,
-    });
-    this.dialogController?.open();
   }
 
   /**
@@ -263,8 +270,8 @@ struct AddCompanyUserPage {
             .textAlign(TextAlign.Start)
 
           Row({ space: size.middleGap }) {
-            this.roleOption('普通用户', 0)
-            this.roleOption('管理员', 1)
+            this.dialogRoleOption('普通用户', 0)
+            this.dialogRoleOption('管理员', 1)
           }
           .width('100%')
           .justifyContent(FlexAlign.Start)
@@ -281,10 +288,10 @@ struct AddCompanyUserPage {
           .textAlign(TextAlign.Start)
 
         Row() {
-          Text(this.selectedDepartmentId ?
-            this.departmentList.find(d => d.id === this.selectedDepartmentId)?.departmentName || '请选择部门' :
+          Text(this.dialogSelectedDepartmentId ?
+            this.dialogDepartmentList.find(d => d.id === this.dialogSelectedDepartmentId)?.departmentName || '请选择部门' :
             '请选择部门')
-            .fontColor(this.selectedDepartmentId ? colors.black : colors.gray)
+            .fontColor(this.dialogSelectedDepartmentId ? colors.black : colors.gray)
             .layoutWeight(1)
           Image($r('app.media.icon_arrow'))
             .width(size.smallIcon)
@@ -305,7 +312,7 @@ struct AddCompanyUserPage {
         })
         .borderRadius(size.middleBorderRaduis)
         .onClick(() => {
-          this.showDepartmentDialog();
+          this.showDialogDepartmentDialog();
         })
       }
       .width('100%')
@@ -319,10 +326,10 @@ struct AddCompanyUserPage {
           .textAlign(TextAlign.Start)
 
         Row() {
-          Text(this.selectedPositionId ?
-            this.positionList.find(p => p.id === this.selectedPositionId)?.positionName || '请选择职位' :
+          Text(this.dialogSelectedPositionId ?
+            this.dialogPositionList.find(p => p.id === this.dialogSelectedPositionId)?.positionName || '请选择职位' :
             '请选择职位')
-            .fontColor(this.selectedPositionId ? colors.black : colors.gray)
+            .fontColor(this.dialogSelectedPositionId ? colors.black : colors.gray)
             .layoutWeight(1)
           Image($r('app.media.icon_arrow'))
             .width(size.smallIcon)
@@ -343,7 +350,7 @@ struct AddCompanyUserPage {
         })
         .borderRadius(size.middleBorderRaduis)
         .onClick(() => {
-          if (!this.selectedDepartmentId) {
+          if (!this.dialogSelectedDepartmentId) {
             promptAction.showToast({
               message: '请先选择部门',
               duration: 2000,
@@ -351,7 +358,7 @@ struct AddCompanyUserPage {
             });
             return;
           }
-          this.showPositionDialog();
+          this.showDialogPositionDialog();
         })
       }
       .width('100%')
@@ -377,19 +384,17 @@ struct AddCompanyUserPage {
           .height(size.btnHeight)
           .textAlign(TextAlign.Center)
           .fontColor(Color.White)
-          .backgroundColor(colors.primary)
+          .backgroundColor(this.dialogSelectedDepartmentId && this.dialogSelectedPositionId ? colors.primary : colors.gray)
           .borderRadius(size.btnHeight / 2)
-          .enabled(!!(this.selectedDepartmentId && this.selectedPositionId))
+          .enabled(!!(this.dialogSelectedDepartmentId && this.dialogSelectedPositionId))
           .onClick(() => {
-            if (this.selectedDepartmentId && this.selectedPositionId) {
-              this.addUserDirect(this.selectedRole);
+            if (this.dialogSelectedDepartmentId && this.dialogSelectedPositionId) {
+              // 将选中的值赋给最终提交使用的变量
+              this.selectedDepartmentId = this.dialogSelectedDepartmentId;
+              this.selectedPositionId = this.dialogSelectedPositionId;
+              this.selectedRole = this.dialogSelectedRole;
+              this.addUserDirect();
               this.dialogController?.close();
-            } else {
-              promptAction.showToast({
-                message: '请选择部门和职位',
-                duration: 2000,
-                bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-              });
             }
           })
       }
@@ -407,22 +412,22 @@ struct AddCompanyUserPage {
   }
 
   /**
-   * @description: 角色选项
+   * @description: 对话框内角色选项
    * @date: 2026-06-26
    * @author wuwenqiang
    */
   @Builder
-  roleOption(label: string, value: number) {
+  dialogRoleOption(label: string, value: number) {
     Row({ space: size.smallGap }) {
       Circle({ width: 20, height: 20 })
-        .fill(this.selectedRole === value ? colors.primary : Color.Transparent)
-        .stroke(this.selectedRole === value ? colors.primary : colors.gray)
+        .fill(this.dialogSelectedRole === value ? colors.primary : Color.Transparent)
+        .stroke(this.dialogSelectedRole === value ? colors.primary : colors.gray)
         .strokeWidth(2)
       Text(label)
         .fontSize(size.middleFont)
     }
     .onClick(() => {
-      this.selectedRole = value;
+      this.dialogSelectedRole = value;
     })
   }
 
@@ -431,8 +436,8 @@ struct AddCompanyUserPage {
    * @date: 2026-06-26
    * @author wuwenqiang
    */
-  showDepartmentDialog() {
-    if (this.departmentList.length === 0) {
+  showDialogDepartmentDialog() {
+    if (this.dialogDepartmentList.length === 0) {
       promptAction.showToast({
         message: '暂无部门可选',
         duration: 2000,
@@ -441,15 +446,17 @@ struct AddCompanyUserPage {
       return;
     }
 
-    const options = this.departmentList.map(d => d.departmentName);
+    const options = this.dialogDepartmentList.map(d => d.departmentName);
     const tempDialog = new CustomDialogController({
       customStyle: true,
       builder: OptionDialogComponent({
-        cancel: (): void => tempDialog.close(),
+        cancel: (): void => {
+          tempDialog.close();
+        },
         confirm: (value: string, index: number) => {
-          const department = this.departmentList[index];
+          const department = this.dialogDepartmentList[index];
           if (department) {
-            this.loadPositions(department.id);
+            this.loadPositionListForDialog(department.id);
             tempDialog.close();
           }
         },
@@ -465,8 +472,8 @@ struct AddCompanyUserPage {
    * @date: 2026-06-26
    * @author wuwenqiang
    */
-  showPositionDialog() {
-    if (this.positionList.length === 0) {
+  showDialogPositionDialog() {
+    if (this.dialogPositionList.length === 0) {
       promptAction.showToast({
         message: '暂无职位可选',
         duration: 2000,
@@ -475,15 +482,17 @@ struct AddCompanyUserPage {
       return;
     }
 
-    const options = this.positionList.map(p => p.positionName);
+    const options = this.dialogPositionList.map(p => p.positionName);
     const tempDialog = new CustomDialogController({
       customStyle: true,
       builder: OptionDialogComponent({
-        cancel: (): void => tempDialog.close(),
+        cancel: (): void => {
+          tempDialog.close();
+        },
         confirm: (value: string, index: number) => {
-          const position = this.positionList[index];
+          const position = this.dialogPositionList[index];
           if (position) {
-            this.selectedPositionId = position.id;
+            this.dialogSelectedPositionId = position.id;
             tempDialog.close();
           }
         },
@@ -499,8 +508,9 @@ struct AddCompanyUserPage {
    * @date: 2026-06-26
    * @author wuwenqiang
    */
-  addUserDirect(role: number) {
+  addUserDirect() {
     // 普通管理员只能添加普通用户
+    let role = this.dialogSelectedRole;
     if (!this.isSuperAdmin) {
       role = 0;
     }
@@ -520,11 +530,30 @@ struct AddCompanyUserPage {
           duration: 2000,
           bottom: px2vp(display.getDefaultDisplaySync().height) / 2
         });
-        // 更新列表中的状态
+        // 更新列表中的状态 - 将用户标记为已添加
         const index = this.searchUserList.findIndex(u => u.id === this.selectedUserId);
         if (index !== -1) {
-          this.searchUserList[index].checked = 1;
-          this.searchUserList.splice(index, 1, JSON.parse(JSON.stringify(this.searchUserList[index])));
+          const original = this.searchUserList[index];
+          const updatedUser: SearchUserType = {
+            id: original.id,
+            userAccount: original.userAccount,
+            createDate: original.createDate,
+            updateDate: original.updateDate,
+            username: original.username,
+            telephone: original.telephone,
+            email: original.email,
+            avater: original.avater,
+            birthday: original.birthday,
+            sex: original.sex,
+            role: original.role,
+            password: original.password,
+            sign: original.sign,
+            region: original.region,
+            disabled: original.disabled,
+            permission: original.permission,
+            checked: 1
+          };
+          this.searchUserList.splice(index, 1, updatedUser);
         }
       } else {
         promptAction.showToast({
