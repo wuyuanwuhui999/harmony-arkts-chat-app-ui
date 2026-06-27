@@ -9,7 +9,6 @@ export default {
   updateAvater:'/service/user/updateAvater',//更新头像
   updatePassword: '/service/user/updatePassword',//更新密码
   loginByEmail: '/service/user/loginByEmail',//邮箱登录
-  searchUsers: "/service/user/searchUsers",// 搜索用户
   chat:"/service/chat/chat",// ai聊天
   getChatHistory: "/service/chat/getChatHistory",// ai聊天
   chatWs: "/service/chat/ws/chat",// ai聊天
@@ -32,6 +31,7 @@ export default {
   updatePrompt: '/service/prompt/updatePrompt', // 更新提示词
   getCompanyList: '/service/company/getCompanyList', // 获取公司列表
 
+  searchUsers: "/service/company/searchUsers",// 搜索用户
   getCompanyUsers: '/service/company/getCompanyUsers',      // 获取公司用户列表
   removeCompanyUser: '/service/company/removeUser',         // 移除公司用户
   addCompanyUser: '/service/company/addUser',              // 添加公司用户

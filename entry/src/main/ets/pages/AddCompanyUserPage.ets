@@ -515,11 +515,39 @@ struct AddCompanyUserPage {
       role = 0;
     }
 
+    // 确保所有参数都有值
+    if (!this.selectedUserId) {
+      promptAction.showToast({
+        message: '用户ID缺失，请重新选择用户',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
+    if (!this.companyId) {
+      promptAction.showToast({
+        message: '公司ID缺失，请重新进入页面',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
+    if (!this.selectedPositionId) {
+      promptAction.showToast({
+        message: '请选择职位',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
     const params: AddCompanyUserParams = {
       userId: this.selectedUserId,
       companyId: this.companyId,
       role: role,
-      positionId: this.selectedPositionId || ''
+      positionId: this.selectedPositionId
     };
 
     this.loadingController.showLoading();
@@ -530,31 +558,35 @@ struct AddCompanyUserPage {
           duration: 2000,
           bottom: px2vp(display.getDefaultDisplaySync().height) / 2
         });
-        // 更新列表中的状态 - 将用户标记为已添加
-        const index = this.searchUserList.findIndex(u => u.id === this.selectedUserId);
-        if (index !== -1) {
-          const original = this.searchUserList[index];
-          const updatedUser: SearchUserType = {
-            id: original.id,
-            userAccount: original.userAccount,
-            createDate: original.createDate,
-            updateDate: original.updateDate,
-            username: original.username,
-            telephone: original.telephone,
-            email: original.email,
-            avater: original.avater,
-            birthday: original.birthday,
-            sex: original.sex,
-            role: original.role,
-            password: original.password,
-            sign: original.sign,
-            region: original.region,
-            disabled: original.disabled,
-            permission: original.permission,
-            checked: 1
-          };
-          this.searchUserList.splice(index, 1, updatedUser);
-        }
+        // 更新列表中的状态 - 将用户标记为已添加（checked = 1）
+        // 使用 map 生成新数组触发 UI 更新
+        this.searchUserList = this.searchUserList.map((item: SearchUserType) => {
+          if (item.id === this.selectedUserId) {
+            // 创建新对象，更新 checked 状态为 1
+            const updatedItem: SearchUserType = {
+              id: item.id,
+              userAccount: item.userAccount,
+              createDate: item.createDate,
+              updateDate: item.updateDate,
+              username: item.username,
+              telephone: item.telephone,
+              email: item.email,
+              avater: item.avater,
+              birthday: item.birthday,
+              sex: item.sex,
+              role: item.role,
+              password: item.password,
+              sign: item.sign,
+              region: item.region,
+              disabled: item.disabled,
+              permission: item.permission,
+              checked: 1  // 标记为已添加
+            };
+            return updatedItem;
+          }
+          return item;
+        });
+        this.dialogController?.close();
       } else {
         promptAction.showToast({
           message: res.msg || '添加用户失败',
@@ -564,8 +596,9 @@ struct AddCompanyUserPage {
       }
     }).catch((err: Error) => {
       console.error('添加用户失败:', JSON.stringify(err));
+      let errorMsg = '添加用户失败，请重试';
       promptAction.showToast({
-        message: '添加用户失败，请重试',
+        message: errorMsg,
         duration: 2000,
         bottom: px2vp(display.getDefaultDisplaySync().height) / 2
       });
@@ -602,7 +635,7 @@ struct AddCompanyUserPage {
         .alignItems(HorizontalAlign.Start)
 
         // 添加按钮
-        if (item.checked === 1) {
+        if (item.checked == 1) {
           Text('已添加')
             .fontColor(Color.White)
             .backgroundColor(colors.gray)
