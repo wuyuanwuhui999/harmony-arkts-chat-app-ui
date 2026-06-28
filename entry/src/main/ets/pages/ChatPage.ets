@@ -1,3 +1,4 @@
+// ets/pages/ChatPage.ets
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import router from '@ohos.router';
@@ -10,11 +11,10 @@ import {
   ChatParamsType,
   DocumentType,
   UserDataType,
-  TenantUserType,
+  TenantType,
   DirectoryType,
   DocumentCheckType,
   PromptInterface,
-  TenantType,
   CompanyType
 } from '../type/Index';
 import {
@@ -22,7 +22,6 @@ import {
   getChatHistoryService,
   getMyDocumentService,
   deleteMyDocumentService,
-  getTenantUserService,
   getDirectoryListService,
   getPromptService,
   updatePromptService,
@@ -30,7 +29,7 @@ import {
 } from '../service/Index';
 import { PositionEnum } from '../common/enum';
 import AvaterComponent from "../components/AvaterComponent";
-import { USER_DATA, TENANT_USER_DATA, DEFAULT_TENANT_USER, COMPANY_DATA, PAGE_SIZE, HOST } from '../common/constant';
+import { USER_DATA, COMPANY_DATA, PAGE_SIZE, HOST } from '../common/constant';
 import { formatTimeAgo, generateSecureID, formatTime} from "../utils/common";
 import { display, promptAction } from '@kit.ArkUI';
 import webSocket from '@ohos.net.webSocket';
@@ -43,7 +42,6 @@ import BottomDialogComponent from "../components/BottomDialogComponent";
 import MarkdownRenderer from "../components/MarkdownRenderer";
 
 @Entry
-@Component
 export default struct ChatPage {
   @State modelList: Array<ChatModelType> = []
   @State activeModelName: string = "";
@@ -52,12 +50,12 @@ export default struct ChatPage {
   @State showMenu: boolean = false;
   @State pageNum: number = 1;
   @State total: number = 0;
-  @State historyList: GroupedByTimeAgoType = {}; // 历史记录数据
+  @State historyList: GroupedByTimeAgoType = {};
   @State token: string = "";
-  @State showHistory:boolean = false;
+  @State showHistory: boolean = false;
   private scroller: Scroller = new Scroller()
-  private myDocList:DocumentType[] = [];
-  @State groupDocList:DocumentCheckType[] = [];
+  private myDocList: DocumentType[] = [];
+  @State groupDocList: DocumentCheckType[] = [];
   @State chatList: Array<ChatType> = [
     {
       responseContent: "你好，我是智能音乐助手小吴同学，请问有什么可以帮助您？",
@@ -66,25 +64,24 @@ export default struct ChatPage {
   ];
   @State thinkContent: string = "";
   @State responseContent: string = "";
-  @State showThink:boolean = false;
-  @State type:string = "";
-  @State language:string = "zh";
+  @State showThink: boolean = false;
+  @State type: string = "";
+  @State language: string = "zh";
   @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
-  @State directoryList:Array<DirectoryType> = [];
-  @State checkedDocIds:string[]=[];
+  @State directoryList: Array<DirectoryType> = [];
+  @State checkedDocIds: string[] = [];
   private message: string = "";
   private dialogController: CustomDialogController | null = null
   private ws: webSocket.WebSocket | null = null;
-  @State promptData: PromptInterface | null = null; // 提示词数据
+  @State promptData: PromptInterface | null = null;
   @State userInputValue: string = ""
-  @Watch('onTenantUserChange')
-  @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
   @State tenantList: Array<TenantType> = []
-  @State promptInputValue: string = ''; // 提示词输入框的值
+  @State currentTenant: TenantType | null = null;
+  @State promptInputValue: string = '';
   @StorageLink(COMPANY_DATA) companyData: CompanyType | null = null;
-  private promptDialogController: CustomDialogController | null = null; // 提示词对话框控制器
-  private myDocDialogController: CustomDialogController | null = null; // 我的文档对话框控制器
-  private historyDialogController: CustomDialogController | null = null; // 历史记录对话框控制器
+  private promptDialogController: CustomDialogController | null = null;
+  private myDocDialogController: CustomDialogController | null = null;
+  private historyDialogController: CustomDialogController | null = null;
 
   @Styles
   blockStyle(){
@@ -95,61 +92,44 @@ export default struct ChatPage {
     .margin({ top: size.middleGap })
   }
 
-  /**
-   * @author: system
-   * @description: 监听租户变化，重新加载提示词
-   * @date: 2026-04-27
-   */
-  async onTenantUserChange() {
-    if (this.tenantUser && (this.tenantUser.tenantId || this.tenantUser.id)) {
-      await this.getPrompt();
-    }
-  }
-
   async aboutToAppear() {
     const companyData = AppStorage.get<CompanyType>(COMPANY_DATA);
-
-    // 1. 先获取公司ID
     const companyId = companyData?.id || '';
 
-    // 2. 获取租户列表
+    // 1. 获取租户列表并设置当前租户
     try {
       const tenantListRes = await getTenantListService(companyId);
 
       if (tenantListRes.data && tenantListRes.data.length > 0) {
         this.tenantList = tenantListRes.data;
 
-        // 3. 从缓存获取上次保存的租户ID
+        // 2. 从缓存获取上次保存的租户ID
         const cachedTenantId = await preference.getPreference(`${this.userData.id}:tenantId`);
 
         let selectedTenant: TenantType | null = null;
 
-        // 4. 如果缓存中有租户ID，在列表中查找
+        // 3. 如果缓存中有租户ID，在列表中查找
         if (cachedTenantId) {
           selectedTenant = this.tenantList.find(item => item.id === cachedTenantId) || null;
         }
 
-        // 5. 如果找不到或没有缓存，取第一条
+        // 4. 如果找不到或没有缓存，取第一条
         if (!selectedTenant) {
           selectedTenant = this.tenantList[0];
         }
 
-        // 6. 设置当前租户
+        // 5. 设置当前租户
         if (selectedTenant) {
-          await this.switchTenant(selectedTenant);
+          this.currentTenant = selectedTenant;
+          // 保存租户ID到缓存
+          await preference.putPreference(`${this.userData.id}:tenantId`, selectedTenant.id);
         }
-      } else {
-        // 使用默认租户
-        const defaultTenantUser = this.getDefaultTenantUser();
-        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, defaultTenantUser);
       }
     } catch (error) {
-      // 使用默认租户
-      const defaultTenantUser = this.getDefaultTenantUser();
-      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, defaultTenantUser);
+      console.error('[ChatPage] 获取租户列表失败:', JSON.stringify(error));
     }
 
-    // 7. 获取模型列表 - 传入 companyId
+    // 6. 获取模型列表 - 传入 companyId
     getModelListService(companyId).then((res) => {
       if (res.data && res.data.length > 0) {
         this.modelList = res.data;
@@ -159,47 +139,7 @@ export default struct ChatPage {
       console.error('[ChatPage] 获取模型列表失败:', JSON.stringify(err));
     });
 
-    // 8. 在租户信息加载完成后获取提示词
-    await this.getPrompt();
-  }
-
-  /**
-   * @author: system
-   * @description: 切换租户
-   * @date: 2026-06-26
-   */
-  switchTenant = async (tenant: TenantType): Promise<void> => {
-
-    // 如果选择的是私人空间（id为空），使用默认租户
-    if (!tenant.id || tenant.id === "") {
-      const defaultTenantUser = this.getDefaultTenantUser();
-      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, defaultTenantUser);
-      // 保存到缓存
-      await preference.putPreference(`${this.userData.id}:tenantId`, "");
-      return;
-    }
-
-    // 获取租户用户信息
-    try {
-      const res = await getTenantUserService(tenant.id);
-      if (res.data) {
-        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, res.data);
-      } else {
-        AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
-      }
-    } catch (error) {
-      AppStorage.SetOrCreate<TenantUserType>(TENANT_USER_DATA, this.getDefaultTenantUser());
-    }
-
-    // 保存租户ID到缓存
-    await preference.putPreference(`${this.userData.id}:tenantId`, tenant.id);
-
-    // 获取公司ID，刷新模型列表
-    const companyData = AppStorage.get<CompanyType>(COMPANY_DATA);
-    const companyId = companyData?.id || '';
-    this.refreshModelList(companyId);
-
-    // 重新加载提示词
+    // 7. 在租户信息加载完成后获取提示词
     await this.getPrompt();
   }
 
@@ -286,11 +226,25 @@ export default struct ChatPage {
     });
   }
 
-  getDefaultTenantUser():TenantUserType{
-    const defaultTenantUser:TenantUserType = JSON.parse(JSON.stringify(DEFAULT_TENANT_USER));
-    defaultTenantUser.userId = defaultTenantUser.tenantId = this.userData.id!;
-    defaultTenantUser.username = this.userData.username;
-    return defaultTenantUser
+  /**
+   * @author: system
+   * @description: 切换租户
+   * @date: 2026-06-26
+   */
+  switchTenant = async (tenant: TenantType): Promise<void> => {
+    // 设置当前租户
+    this.currentTenant = tenant;
+
+    // 保存租户ID到缓存
+    await preference.putPreference(`${this.userData.id}:tenantId`, tenant.id);
+
+    // 获取公司ID，刷新模型列表
+    const companyData = AppStorage.get<CompanyType>(COMPANY_DATA);
+    const companyId = companyData?.id || '';
+    this.refreshModelList(companyId);
+
+    // 重新加载提示词
+    await this.getPrompt();
   }
 
   /**
@@ -299,8 +253,18 @@ export default struct ChatPage {
    * @date: 2025-9-17 10:19
    */
   onShowDirectoryDialog = () => {
-    getDirectoryListService(this.tenantUser.tenantId || this.tenantUser.id).then((res)=>{
-      this.directoryList.splice(1,this.directoryList.length);
+    const tenantId = this.currentTenant?.id;
+    if (!tenantId) {
+      promptAction.showToast({
+        message: "获取租户信息失败",
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
+    getDirectoryListService(tenantId).then((res) => {
+      this.directoryList.splice(1, this.directoryList.length);
       this.directoryList.push(...res.data);
       this.dialogController = new CustomDialogController({
         customStyle: true,
@@ -312,7 +276,6 @@ export default struct ChatPage {
       })
       this.dialogController.open()
     })
-
   }
 
   /**
@@ -450,16 +413,14 @@ export default struct ChatPage {
     }).flexGrow(1)
   }
 
-  // page/ChatPage.ets - 在组件内部添加以下方法
-
   /**
    * @author: system
    * @description: 显示修改提示词对话框
    * @date: 2026-04-27
    */
   showPromptDialog = () => {
-    // 获取当前提示词内容
-    const tenantId = this.tenantUser.tenantId || this.tenantUser.id;
+    // 获取当前租户ID
+    const tenantId = this.currentTenant?.id;
     if (!tenantId) {
       promptAction.showToast({
         message: "获取租户信息失败",
@@ -502,7 +463,7 @@ export default struct ChatPage {
    * @date: 2026-04-27
    */
   savePrompt = () => {
-    const tenantId = this.tenantUser.tenantId;
+    const tenantId = this.currentTenant?.id;
     if (!tenantId) {
       promptAction.showToast({
         message: "获取租户信息失败",
@@ -511,6 +472,7 @@ export default struct ChatPage {
       });
       return;
     }
+
     const promptData: PromptInterface = {
       id: this.promptData?.id || '',
       tenantId: tenantId,
@@ -519,6 +481,7 @@ export default struct ChatPage {
       createTime: "",
       updateTime: ""
     };
+
     updatePromptService(promptData).then((res) => {
       if (res.data !== null) {
         promptAction.showToast({
@@ -537,7 +500,7 @@ export default struct ChatPage {
           bottom: px2vp(display.getDefaultDisplaySync().height) / 2
         });
       }
-    }).catch((error:Error) => {
+    }).catch((error: Error) => {
       console.error('保存提示词失败:', JSON.stringify(error));
       promptAction.showToast({
         message: "保存失败，请重试",
@@ -623,8 +586,18 @@ export default struct ChatPage {
    * @date: 2026-04-28
    */
   showMyDocumentDialog = () => {
+    const tenantId = this.currentTenant?.id;
+    if (!tenantId) {
+      promptAction.showToast({
+        message: "获取租户信息失败",
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
     // 加载我的文档列表
-    getMyDocumentService(this.tenantUser.tenantId).then((res) => {
+    getMyDocumentService(tenantId).then((res) => {
       this.myDocList = res.data;
       // 打开对话框
       this.myDocDialogController = new CustomDialogController({
@@ -636,7 +609,7 @@ export default struct ChatPage {
         alignment: DialogAlignment.Bottom,
       })
       this.myDocDialogController.open()
-    }).catch((error:Error) => {
+    }).catch((error: Error) => {
       console.error('获取文档列表失败:', JSON.stringify(error));
       promptAction.showToast({
         message: "获取文档列表失败",
@@ -664,7 +637,7 @@ export default struct ChatPage {
       Divider().height(1).color(colors.borderColor)
       Text("历史记录").height(size.btnHeight).onClick(()=>{
         this.showMenu = false;
-        this.showHistoryDialog(); // 修改：改为打开对话框
+        this.showHistoryDialog();
       })
       Divider().height(1).color(colors.borderColor)
       Text("切换模型").height(size.btnHeight).onClick(this.onTabModel)
@@ -701,7 +674,13 @@ export default struct ChatPage {
    * @date: 2026-04-28
    */
   loadHistoryData = () => {
-    getChatHistoryService(this.tenantUser.tenantId,this.pageNum, PAGE_SIZE).then((res) => {
+    const tenantId = this.currentTenant?.id;
+    if (!tenantId) {
+      console.warn('[ChatPage] 加载历史记录失败：租户ID为空');
+      return;
+    }
+
+    getChatHistoryService(tenantId, this.pageNum, PAGE_SIZE).then((res) => {
       this.total = res.total
       const result: GroupedByChatIdType = {}
       res.data.forEach((aItem) => {
@@ -729,9 +708,15 @@ export default struct ChatPage {
    * @date: 2026-04-28
    */
   loadMoreHistory = () => {
+    const tenantId = this.currentTenant?.id;
+    if (!tenantId) {
+      console.warn('[ChatPage] 加载更多历史记录失败：租户ID为空');
+      return;
+    }
+
     if (this.total > this.pageNum * PAGE_SIZE) {
       this.pageNum++;
-      getChatHistoryService(this.tenantUser.tenantId,this.pageNum, PAGE_SIZE).then((res) => {
+      getChatHistoryService(tenantId, this.pageNum, PAGE_SIZE).then((res) => {
         const result: GroupedByChatIdType = {}
         res.data.forEach((aItem) => {
           aItem.timeAgo = formatTimeAgo(aItem.createTime);
@@ -893,9 +878,9 @@ export default struct ChatPage {
    * @date: 2026-04-27
    */
   getPrompt = async (): Promise<void> => {
-    const tenantId = this.tenantUser.tenantId || this.tenantUser.id;
+    const tenantId = this.currentTenant?.id;
     if (!tenantId) {
-      console.warn('获取提示词失败：租户ID为空');
+      console.warn('[ChatPage] 获取提示词失败：租户ID为空');
       return;
     }
 
@@ -905,11 +890,9 @@ export default struct ChatPage {
         this.promptData = res.data;
       }
     } catch (error) {
-      console.error('获取提示词失败:', JSON.stringify(error));
+      console.error('[ChatPage] 获取提示词失败:', JSON.stringify(error));
     }
   }
-
-  // page/ChatPage.ets - 修改 DeleteButton 方法
 
   /**
    * @author: wuwenqiang
@@ -917,7 +900,7 @@ export default struct ChatPage {
    * @date: 2025-04-13 12:07
    */
   @Builder
-  DeleteButton(docItem:DocumentType) {
+  DeleteButton(docItem: DocumentType) {
     Column() {
       Text('删除')
         .fontColor(Color.White)
@@ -936,18 +919,21 @@ export default struct ChatPage {
             this.dialogController?.close();
           },
           confirm: () => {
-            deleteMyDocumentService(docItem.id).then((res)=>{
+            deleteMyDocumentService(docItem.id).then((res) => {
               promptAction.showToast({
                 message: "删除文档成功",
                 duration: 2000,
                 bottom: px2vp(display.getDefaultDisplaySync().height) / 2
               })
               // 刷新文档列表
-              getMyDocumentService(this.tenantUser.tenantId).then((res) => {
-                this.myDocList = res.data;
-              });
+              const tenantId = this.currentTenant?.id;
+              if (tenantId) {
+                getMyDocumentService(tenantId).then((res) => {
+                  this.myDocList = res.data;
+                });
+              }
               this.dialogController?.close()
-            }).catch(()=>{
+            }).catch(() => {
               promptAction.showToast({
                 message: "删除文档失败",
                 duration: 2000,
@@ -963,16 +949,26 @@ export default struct ChatPage {
   }
 
   onClickDoc(){
-    getMyDocumentService(this.tenantUser.tenantId).then((res)=>{
+    const tenantId = this.currentTenant?.id;
+    if (!tenantId) {
+      promptAction.showToast({
+        message: "获取租户信息失败",
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
+    getMyDocumentService(tenantId).then((res) => {
       this.groupDocList.length = 0;
-      res.data.forEach((aItem)=>{
-        let docGroupItem:DocumentCheckType|undefined = this.groupDocList.find((bItem)=> bItem.directoryId == aItem.directoryId)
-        if(!docGroupItem){
+      res.data.forEach((aItem) => {
+        let docGroupItem: DocumentCheckType | undefined = this.groupDocList.find((bItem) => bItem.directoryId == aItem.directoryId)
+        if (!docGroupItem) {
           docGroupItem = {
-            checked:false,
-            directoryName:aItem.directoryName,
-            directoryId:aItem.directoryId,
-            docList:[]
+            checked: false,
+            directoryName: aItem.directoryName,
+            directoryId: aItem.directoryId,
+            docList: []
           }
           this.groupDocList.push(docGroupItem);
         }
@@ -980,13 +976,13 @@ export default struct ChatPage {
         docGroupItem.docList.push(aItem);
       })
       this.dialogController = new CustomDialogController({
-      customStyle: true,
-      builder: BottomDialogComponent({
-        dialogHeight: '80%',
-        builder: this.documentCheckBuilder.bind(this)
-      }),
-      alignment: DialogAlignment.Bottom,
-    })
+        customStyle: true,
+        builder: BottomDialogComponent({
+          dialogHeight: '80%',
+          builder: this.documentCheckBuilder.bind(this)
+        }),
+        alignment: DialogAlignment.Bottom,
+      })
       this.dialogController.open()
     })
   }
@@ -1116,7 +1112,7 @@ export default struct ChatPage {
    */
   openTenantDialog = () => {
     // 获取当前选中的租户ID
-    const currentTenantId = this.tenantUser.tenantId || this.tenantUser.id || '';
+    const currentTenantId = this.currentTenant?.id || '';
 
     // 构建选项列表，标记当前选中的租户
     const options = this.tenantList.map(item => {
@@ -1189,7 +1185,7 @@ export default struct ChatPage {
           // 中间标题区域 - 显示租户名称和模型名称
           Row() {
             // 租户名称 - 可点击切换
-            Text(this.tenantUser.tenantName || "私人空间")
+            Text(this.currentTenant?.name || "私人空间")
               .fontSize(16)
               .fontWeight(FontWeight.Medium)
               .maxLines(1)
@@ -1374,17 +1370,17 @@ export default struct ChatPage {
             }
             .backgroundColor(colors.white)
             .borderRadius(size.inputHeight)
-              .border({
-                width:1,
-                color:this.type == "document" ? colors.primary :colors.gray,
-                style:BorderStyle.Solid
-              })
-              .padding({
-                top:size.smallGap,
-                bottom:size.smallGap,
-                left:size.middleGap,
-                right:size.middleGap
-              })
+            .border({
+              width:1,
+              color:this.type == "document" ? colors.primary :colors.gray,
+              style:BorderStyle.Solid
+            })
+            .padding({
+              top:size.smallGap,
+              bottom:size.smallGap,
+              left:size.middleGap,
+              right:size.middleGap
+            })
 
             Row({space:size.smallGap}){
               Text(this.language == "zh" ? "中文" : "英文")

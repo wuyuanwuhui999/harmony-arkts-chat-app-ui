@@ -1,32 +1,40 @@
+// ets/pages/TenantManagerPage.ets
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import {
   addTenantUserService,
-  deleteTenantUserService, getTenantUserListService,searchUserListService } from '../service/Index';
+  deleteTenantUserService,
+  getTenantUserListService,
+  searchUserListService
+} from '../service/Index';
 import NavigatorTitleComponent from '../components/NavigatorTitleComponent';
-import { TenantUserType,UserDataType,UserWithChecked } from '../type/Index';
+import { TenantUserType, UserDataType, UserWithChecked, TenantType } from '../type/Index';
 import AvaterComponent from '../components/AvaterComponent';
-import {PAGE_SIZE,TENANT_USER_DATA,USER_DATA} from "../common/constant";
+import { PAGE_SIZE, USER_DATA } from "../common/constant";
 import DialogComponent from '../components/DialogComponent';
 import { display, promptAction } from '@kit.ArkUI';
 import BottomDialogComponent from '../components/BottomDialogComponent';
 import GlobalLoading from '../components/GlobalLoading';
 import LoadingController from '../controller/LoadingController';
+import router from '@ohos.router';
 
 @Entry
 @Component
 struct TenantManagerPage {
-  @State tenantUserList:Array<TenantUserType> = [];
-  @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
+  @State tenantUserList: Array<TenantUserType> = [];
   @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
-  @State keyword:string = "";
-  @State searchUserList:UserWithChecked[] = [];
-  @State total:number = 0;
+  @State keyword: string = "";
+  @State searchUserList: UserWithChecked[] = [];
+  @State total: number = 0;
+  /** 当前租户信息 - 从路由参数获取 */
+  @State currentTenant: TenantType | null = null;
   private loadingController: LoadingController = new LoadingController()
   dialogController: CustomDialogController | null = null;
-  deleteIndex:number = -1;
-  pageNum:number = 1;
-  @Styles blockStyle(){
+  deleteIndex: number = -1;
+  pageNum: number = 1;
+
+  @Styles
+  blockStyle() {
     .backgroundColor(colors.white)
     .borderRadius(size.middleBorderRaduis)
     .padding(size.middleGap)
@@ -35,9 +43,60 @@ struct TenantManagerPage {
   }
 
   aboutToAppear(): void {
-    getTenantUserListService(this.tenantUser.tenantId,this.pageNum,PAGE_SIZE).then((res)=>{
-      this.tenantUserList.push(...res.data);
-    })
+    // 从路由参数获取当前租户
+    const params = router.getParams() as Record<string, Object>;
+    const tenantId = (params?.tenantId as string) || '';
+
+    if (!tenantId) {
+      promptAction.showToast({
+        message: '获取租户信息失败',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
+    // 构建当前租户对象（仅用于显示名称和角色判断）
+    this.currentTenant = {
+      id: tenantId,
+      name: params?.tenantName as string || '租户',
+      code: '',
+      role: (params?.role as number) || 0,
+      status: 1,
+      created_by: '',
+    };
+
+    // 加载租户用户列表
+    this.loadTenantUserList();
+  }
+
+  /**
+   * @description: 加载租户用户列表
+   * @date: 2025-09-20
+   * @author wuwenqiang
+   */
+  loadTenantUserList() {
+    const tenantId = this.currentTenant?.id;
+    if (!tenantId) return;
+
+    this.loadingController.showLoading();
+    getTenantUserListService(tenantId, this.pageNum, PAGE_SIZE).then((res) => {
+      if (this.pageNum === 1) {
+        this.tenantUserList = res.data || [];
+      } else {
+        this.tenantUserList = this.tenantUserList.concat(res.data || []);
+      }
+      this.total = res.total;
+    }).catch((err: Error) => {
+      console.error('获取租户用户列表失败:', JSON.stringify(err));
+      promptAction.showToast({
+        message: '获取租户用户列表失败，请重试',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+    }).finally(() => {
+      this.loadingController.hideLoading();
+    });
   }
 
   /**
@@ -46,7 +105,7 @@ struct TenantManagerPage {
    * @date: 2025-04-13 12:07
    */
   @Builder
-  DeleteButton(tenantUser:TenantUserType,index:number) {
+  DeleteButton(tenantUser: TenantUserType, index: number) {
     Column() {
       Text('删除')
         .fontColor(Color.White)
@@ -55,7 +114,8 @@ struct TenantManagerPage {
     .justifyContent(FlexAlign.Center)
     .width(80)
     .height('100%')
-    .backgroundColor(((tenantUser.roleType ==1 && this.tenantUser.roleType === 2 || tenantUser.roleType === 0 ) && tenantUser.userId !== this.userData.id) ? colors.warn : colors.gray)
+    // 修改：使用 currentTenant.role 替代 tenantUser.roleType
+    .backgroundColor(((tenantUser.roleType == 1 && (this.currentTenant?.role ?? 0) === 2 || tenantUser.roleType === 0) && tenantUser.userId !== this.userData.id) ? colors.warn : colors.gray)
     .onClick(() => {
       this.deleteIndex = index;
       this.dialogController = new CustomDialogController({
@@ -76,40 +136,46 @@ struct TenantManagerPage {
    * @description: 关闭弹窗
    * @date: 2025-09-20 13:21
    */
-  onCancel(){
+  onCancel() {
     this.dialogController?.close();
   }
 
   /**
    * @author: wuwenqiang
-   * @description: 关闭弹窗
+   * @description: 删除租户用户
    * @date: 2025-09-20 13:21
    */
-  onDeleteTenantUser(){
-    deleteTenantUserService(this.tenantUserList[this.deleteIndex].tenantId,this.tenantUserList[this.deleteIndex].userId!).then((res)=>{
+  onDeleteTenantUser() {
+    const tenantId = this.currentTenant?.id;
+    if (!tenantId) return;
+
+    deleteTenantUserService(tenantId, this.tenantUserList[this.deleteIndex].userId!).then((res) => {
       promptAction.showToast({
         message: `删除租户${res.data ? '成功' : '失败'}`,
         duration: 2000,
         bottom: px2vp(display.getDefaultDisplaySync().height) / 2
       });
-      if(res.data){
-        this.tenantUserList.splice(this.deleteIndex,1);
+      if (res.data) {
+        this.tenantUserList.splice(this.deleteIndex, 1);
         this.dialogController?.close()
       }
     });
   }
 
-  onDeleteSearchCheckedUser(){
-    deleteTenantUserService(this.tenantUser.tenantId,this.searchUserList[this.deleteIndex].id!).then((res)=>{
+  onDeleteSearchCheckedUser() {
+    const tenantId = this.currentTenant?.id;
+    if (!tenantId) return;
+
+    deleteTenantUserService(tenantId, this.searchUserList[this.deleteIndex].id!).then((res) => {
       promptAction.showToast({
         message: `删除租户${res.data ? '成功' : '失败'}`,
         duration: 2000,
         bottom: px2vp(display.getDefaultDisplaySync().height) / 2
       });
-      if(res.data){
-        const item:UserWithChecked =  JSON.parse(JSON.stringify(this.searchUserList[this.deleteIndex]));
+      if (res.data) {
+        const item: UserWithChecked = JSON.parse(JSON.stringify(this.searchUserList[this.deleteIndex]));
         item.checked = 0;
-        this.searchUserList.splice(this.deleteIndex,1,item);
+        this.searchUserList.splice(this.deleteIndex, 1, item);
         this.dialogController?.close()
       }
     });
@@ -117,8 +183,8 @@ struct TenantManagerPage {
 
   /**
    * @author: wuwenqiang
-   * @description: 删除弹窗
-   * @date: 2025-04-13 12:07
+   * @description: 添加用户图标
+   * @date: 2025-09-20
    */
   @Builder
   AddIcon() {
@@ -138,20 +204,27 @@ struct TenantManagerPage {
       })
   }
 
+  /**
+   * @author: wuwenqiang
+   * @description: 添加租户用户
+   * @date: 2025-09-20
+   */
+  onAddTenantUser(index: number) {
+    const tenantId = this.currentTenant?.id;
+    if (!tenantId) return;
 
-  onAddTenantUser(index:number){
-    if(this.searchUserList[index].checked === 0){
-      addTenantUserService(this.tenantUser.tenantId,this.searchUserList[index].id!).then(()=>{
+    if (this.searchUserList[index].checked === 0) {
+      addTenantUserService(tenantId, this.searchUserList[index].id!).then(() => {
         this.searchUserList[index].checked = 1;
-        const item:UserWithChecked = JSON.parse(JSON.stringify(this.searchUserList[index]));
-        this.searchUserList.splice(index,1,item)
+        const item: UserWithChecked = JSON.parse(JSON.stringify(this.searchUserList[index]));
+        this.searchUserList.splice(index, 1, item)
         promptAction.showToast({
           message: `添加用户成功`,
           duration: 2000,
           bottom: px2vp(display.getDefaultDisplaySync().height) / 2
         });
       })
-    }else{
+    } else {
       this.deleteIndex = index;
       this.dialogController = new CustomDialogController({
         customStyle: false,
@@ -166,6 +239,11 @@ struct TenantManagerPage {
     }
   }
 
+  /**
+   * @author: wuwenqiang
+   * @description: 添加租户用户对话框构建器
+   * @date: 2025-09-20
+   */
   @Builder
   addTenantUserBuilder() {
     Column() {
@@ -173,7 +251,7 @@ struct TenantManagerPage {
         Blank()
           .width(size.smallIcon)
           .height(size.smallIcon)
-          .margin({left:size.smallIcon})
+          .margin({ left: size.smallIcon })
         Text('添加用户')
           .padding(size.middleGap)
           .textAlign(TextAlign.Center)
@@ -194,13 +272,13 @@ struct TenantManagerPage {
         style: { bottom: BorderStyle.Solid }
       })
     }
-    Scroll(){
-      Column(){
-        Row(){
-          Row(){
+    Scroll() {
+      Column() {
+        Row() {
+          Row() {
             TextInput({
               placeholder: "请输入用户姓名/工号/电话/邮箱",
-              text:this.keyword
+              text: this.keyword
             })
               .height(size.middleAvater)
               .layoutWeight(1)
@@ -208,28 +286,30 @@ struct TenantManagerPage {
               .onChange((value) => {
                 this.keyword = value;
               }).layoutWeight(1)
-            if(this.keyword){
+            if (this.keyword) {
               Image($r("app.media.icon_clear"))
-                .margin({left:size.smallGap})
+                .margin({ left: size.smallGap })
                 .width(size.smallIcon)
                 .height(size.smallIcon)
-                .onClick(()=>{
+                .onClick(() => {
                   this.keyword = ""
                 })
             }
             Image($r("app.media.icon_search"))
-              .margin({left:size.smallGap,right:size.middleGap})
+              .margin({ left: size.smallGap, right: size.middleGap })
               .width(size.smallIcon)
               .height(size.smallIcon)
-              .onClick(()=>{
+              .onClick(() => {
+                const tenantId = this.currentTenant?.id;
+                if (!tenantId) return;
                 this.pageNum = 1;
                 this.searchUserList = [];
                 this.loadingController.showLoading()
-                searchUserListService(this.keyword,this.tenantUser.tenantId,this.pageNum,PAGE_SIZE).then((res)=>{
+                searchUserListService(this.keyword, tenantId, this.pageNum, PAGE_SIZE).then((res) => {
                   this.total = res.total;
                   this.searchUserList.push(...res.data);
-                }).finally(()=>{
-                  this.loadingController.showLoading()
+                }).finally(() => {
+                  this.loadingController.hideLoading()
                 })
               })
           }
@@ -238,21 +318,21 @@ struct TenantManagerPage {
           .width("100%")
           .alignItems(VerticalAlign.Center)
         }.blockStyle()
-        Column(){
-          if(this.searchUserList.length === 0){
-            Text("暂无数据").padding({top:size.middleGap,bottom:size.middleGap}).textAlign(TextAlign.Center)
-          }else {
-            ForEach(this.searchUserList,(item:UserWithChecked,index:number)=>{
-              Column(){
-                Row(){
-                  Row(){
-                    AvaterComponent({dimensions:size.middleIcon,avater:item.avater})
-                      .margin({right:size.middleGap})
+        Column() {
+          if (this.searchUserList.length === 0) {
+            Text("暂无数据").padding({ top: size.middleGap, bottom: size.middleGap }).textAlign(TextAlign.Center)
+          } else {
+            ForEach(this.searchUserList, (item: UserWithChecked, index: number) => {
+              Column() {
+                Row() {
+                  Row() {
+                    AvaterComponent({ dimensions: size.middleIcon, avater: item.avater })
+                      .margin({ right: size.middleGap })
                     Text(item.username).layoutWeight(1)
                     Image(item.checked ? $r('app.media.icon_add_tenant_active') : $r('app.media.icon_add_tenant'))
                       .width(size.smallIcon)
                       .height(size.smallIcon)
-                      .onClick(()=>{
+                      .onClick(() => {
                         this.onAddTenantUser(index);
                       })
                   }
@@ -261,19 +341,22 @@ struct TenantManagerPage {
                       bottom: 1,
                     },
                     color: {
-                      bottom: index === this.searchUserList.length - 1 ? Color.Transparent :colors.pageBackground
+                      bottom: index === this.searchUserList.length - 1 ? Color.Transparent : colors.pageBackground
                     },
                     style: {
                       bottom: BorderStyle.Solid
                     }
                   })
-                  .padding({top:index === 0 ? 0 : size.middleGap,bottom:index === this.searchUserList.length -1 ? 0 : size.middleGap})
+                  .padding({
+                    top: index === 0 ? 0 : size.middleGap,
+                    bottom: index === this.searchUserList.length - 1 ? 0 : size.middleGap
+                  })
 
                 }
               }
             })
           }
-        }.blockStyle().margin({bottom:size.middleGap,top:size.middleGap})
+        }.blockStyle().margin({ bottom: size.middleGap, top: size.middleGap })
       }
     }
     .backgroundColor(colors.pageBackground)
@@ -283,10 +366,12 @@ struct TenantManagerPage {
     })
     .layoutWeight(1)
     .align(Alignment.TopStart)
-    .onScrollEdge(()=>{
-      if(this.total <= this.pageNum * PAGE_SIZE){
+    .onScrollEdge(() => {
+      const tenantId = this.currentTenant?.id;
+      if (!tenantId) return;
+      if (this.total <= this.pageNum * PAGE_SIZE) {
         this.pageNum++
-        searchUserListService(this.keyword,this.tenantUser.tenantId,this.pageNum,PAGE_SIZE).then((res)=>{
+        searchUserListService(this.keyword, tenantId, this.pageNum, PAGE_SIZE).then((res) => {
           this.total = res.total;
           this.searchUserList.push(...res.data);
         })
@@ -302,12 +387,12 @@ struct TenantManagerPage {
         rightContent: this.AddIcon.bind(this)
       })
       Scroll() {
-        List(){
-          ForEach(this.tenantUserList,(item:TenantUserType,index:number)=>{
-            ListItem(){
-              Row(){
-                AvaterComponent({dimensions:size.middleIcon,avater:item.avater})
-                  .margin({right:size.middleGap})
+        List() {
+          ForEach(this.tenantUserList, (item: TenantUserType, index: number) => {
+            ListItem() {
+              Row() {
+                AvaterComponent({ dimensions: size.middleIcon, avater: item.avater })
+                  .margin({ right: size.middleGap })
                 Text(item.username).layoutWeight(1)
               }
               .border({
@@ -315,16 +400,25 @@ struct TenantManagerPage {
                   bottom: 1,
                 },
                 color: {
-                  bottom: index === this.tenantUserList.length - 1 ? Color.Transparent :colors.pageBackground
+                  bottom: index === this.tenantUserList.length - 1 ? Color.Transparent : colors.pageBackground
                 },
                 style: {
                   bottom: BorderStyle.Solid
                 }
               })
-              .padding({top:index === 0 ? 0 : size.middleGap,bottom:index === this.tenantUserList.length -1 ? 0 : size.middleGap})
+              .padding({
+                top: index === 0 ? 0 : size.middleGap,
+                bottom: index === this.tenantUserList.length - 1 ? 0 : size.middleGap
+              })
             }.swipeAction({
               end: () => {
-                return this.DeleteButton(item,index)
+                // 修改：使用 currentTenant.role 判断权限
+                const role = this.currentTenant?.role ?? 0;
+                // 只有管理员(role >= 1)才能删除
+                if (role > 0) {
+                  return this.DeleteButton(item, index)
+                }
+                return this.EmptyBuilder()
               }
             })
 
@@ -340,4 +434,18 @@ struct TenantManagerPage {
       .align(Alignment.Top)
     }
   }
+
+  /**
+   * @description: 空构建器（用于禁用滑动操作）
+   * @date: 2026-06-27
+   * @author wuwenqiang
+   */
+  @Builder
+  EmptyBuilder() {
+    Column()
+      .width(0)
+      .height('100%')
+  }
 }
+
+export default TenantManagerPage;

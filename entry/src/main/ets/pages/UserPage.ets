@@ -1,28 +1,32 @@
 // ets/pages/UserPage.ets
 import router from '@ohos.router';
-import { TenantUserType, UserDataType, TenantType, TenantStatus,CompanyType} from "../type/Index";
+import { UserDataType, TenantType, CompanyType } from "../type/Index";
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
-import { USER_DATA,TENANT_USER_DATA,DEFAULT_TENANT_USER, HOST, COMPANY_DATA} from '../common/constant';
+import { USER_DATA, HOST, COMPANY_DATA } from '../common/constant';
 import { updateUserDataService } from '../service/Index';
 import preference from '../utils/PreferenceModel';
 import OptionDialogComponent from '../components/OptionDialogComponent';
 import NavigatorTitleComponent from '../components/NavigatorTitleComponent';
 import DialogComponent from '../components/DialogComponent';
 import { SexValueMap } from '../common/config';
+import { getTenantListService } from '../service/Index';
 
 @Entry
 @Component
 struct UserPage {
   @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
-  @StorageLink(TENANT_USER_DATA) tenantUser: TenantUserType = {} as TenantUserType;
+  @StorageLink(COMPANY_DATA) companyData: CompanyType | null = null;
+  /** 当前选中的租户 */
+  @State currentTenant: TenantType | null = null;
+  /** 租户列表 */
+  @State tenantList: Array<TenantType> = [];
   title: string = '';
   @State field: string = '';
   dialogController: CustomDialogController | null = null
-  @StorageLink(COMPANY_DATA) companyData: CompanyType | null = null;
 
   @Styles
-  blockStyle(){
+  blockStyle() {
     .backgroundColor(colors.white)
     .borderRadius(size.middleBorderRaduis)
     .padding(size.middleGap)
@@ -31,14 +35,14 @@ struct UserPage {
   }
 
   @Styles
-  arrowStyle(){
+  arrowStyle() {
     .margin({ left: size.smallGap })
     .height(size.smallIcon)
     .width(size.smallIcon)
   }
 
   @Styles
-  rowStyle(){
+  rowStyle() {
     .border({
       width: {
         bottom: 1,
@@ -54,6 +58,58 @@ struct UserPage {
     .padding({ top: size.middleGap, bottom: size.middleGap })
   }
 
+  async aboutToAppear() {
+    // 获取当前租户信息
+    await this.loadCurrentTenant();
+  }
+
+  /**
+   * @description: 加载当前租户信息
+   * @date: 2026-06-27
+   * @author wuwenqiang
+   */
+  async loadCurrentTenant() {
+    const companyId = this.companyData?.id || '';
+    const userId = this.userData.id;
+
+    if (!userId) {
+      console.warn('[UserPage] 用户ID为空，无法加载租户信息');
+      return;
+    }
+
+    try {
+      // 获取租户列表
+      const tenantListRes = await getTenantListService(companyId);
+      if (tenantListRes.data && tenantListRes.data.length > 0) {
+        this.tenantList = tenantListRes.data;
+
+        // 从缓存获取上次保存的租户ID
+        const cachedTenantId = await preference.getPreference(`${userId}:tenantId`);
+
+        let selectedTenant: TenantType | null = null;
+
+        // 如果缓存中有租户ID，在列表中查找
+        if (cachedTenantId) {
+          selectedTenant = this.tenantList.find(item => item.id === cachedTenantId) || null;
+        }
+
+        // 如果找不到或没有缓存，取第一条
+        if (!selectedTenant) {
+          selectedTenant = this.tenantList[0];
+        }
+
+        this.currentTenant = selectedTenant;
+      }
+    } catch (error) {
+      console.error('[UserPage] 获取租户信息失败:', JSON.stringify(error));
+    }
+  }
+
+  /**
+   * @description: 显示修改信息弹窗
+   * @date: 2024-01-10
+   * @author wuwenqiang
+   */
   useShowDialog(title: string, field: string) {
     this.title = title;
     this.field = field;
@@ -110,6 +166,11 @@ struct UserPage {
     })
   }
 
+  /**
+   * @description: 退出登录
+   * @date: 2024-01-10
+   * @author wuwenqiang
+   */
   onLogout() {
     preference.setToken("");
     router.replaceUrl({
@@ -120,13 +181,6 @@ struct UserPage {
       }
     });
     router.clear(); // 清除历史页面
-  }
-
-  getDefaultTenantUser():TenantUserType{
-    const defaultTenantUser:TenantUserType = JSON.parse(JSON.stringify(DEFAULT_TENANT_USER));
-    defaultTenantUser.userId = defaultTenantUser.tenantId = this.userData.id!;
-    defaultTenantUser.username = this.userData.username;
-    return defaultTenantUser
   }
 
   /**
@@ -235,14 +289,14 @@ struct UserPage {
             .width('100%')
             .padding(size.middleGap)
             .textAlign(TextAlign.Center)
-            .margin({ top: size.middleGap})
+            .margin({ top: size.middleGap })
             .onClick(() => {
               router.pushUrl({
                 url: 'pages/UpdatePasswordPage', // 目标url
               });
             })
 
-          // 新增：切换公司/个人空间按钮
+          // 切换公司/个人空间按钮
           Text('切换公司/个人空间')
             .padding(size.smallGap)
             .border({
@@ -255,12 +309,13 @@ struct UserPage {
             .width('100%')
             .padding(size.middleGap)
             .textAlign(TextAlign.Center)
-            .margin({ top: size.middleGap})
+            .margin({ top: size.middleGap })
             .onClick(() => {
               this.goToCompanyPage();
             })
 
-          if(this.tenantUser.roleType > 0){
+          // 租户管理按钮 - 修改判断条件：使用 currentTenant?.role 替代 tenantUser.roleType
+          if ((this.currentTenant?.role ?? 0) > 0) {
             Text('租户管理')
               .padding(size.smallGap)
               .border({
@@ -273,17 +328,20 @@ struct UserPage {
               .width('100%')
               .padding(size.middleGap)
               .textAlign(TextAlign.Center)
-              .margin({ top: size.middleGap})
+              .margin({ top: size.middleGap })
               .onClick(() => {
                 router.pushUrl({
-                  url: 'pages/TenantManagerPage', // 目标url
+                  url: 'pages/TenantManagerPage',
+                  params: {
+                    tenantId: this.currentTenant?.id,
+                    tenantName: this.currentTenant?.name,
+                    role: this.currentTenant?.role
+                  }
                 });
               })
           }
 
-          // 在 "切换公司/个人空间" 按钮之后，"退出登录" 按钮之前添加
-
-          // 新增：用户管理按钮（根据角色显示）
+          // 用户管理按钮（根据角色显示）- 管理员或超级管理员可见
           if (this.companyData && this.companyData.role && this.companyData.role > 0) {
             Text('用户管理')
               .padding(size.smallGap)
@@ -297,7 +355,7 @@ struct UserPage {
               .width('100%')
               .padding(size.middleGap)
               .textAlign(TextAlign.Center)
-              .margin({ top: size.middleGap})
+              .margin({ top: size.middleGap })
               .onClick(() => {
                 router.pushUrl({
                   url: 'pages/UserManagePage',
@@ -319,7 +377,6 @@ struct UserPage {
             .onClick(() => {
               this.useShowDialog('logout', '');
             })
-
 
         }.padding({ left: size.middleGap, right: size.middleGap })
       }.layoutWeight(1).scrollable(ScrollDirection.Vertical).align(Alignment.Top)

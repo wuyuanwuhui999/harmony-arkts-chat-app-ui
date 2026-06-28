@@ -203,6 +203,7 @@ export interface TenantType {
   id: string;// 租户ID（主键）
   name: string;// 租户名称
   code: string;// 租户编码（唯一）
+  role: number;// 用户在这个租户内的角色
   description?: string | null;// 租户描述（可选）
   status: TenantStatus;// 租户状态
   create_date?: Date;// 创建时间
@@ -217,7 +218,7 @@ export interface AppStoreStateType {
   platform: string;
   device: string;
   version: string;
-  tenantUser: TenantUserType;
+  tenant: TenantType;
 }
 
 // 或者使用接口继承的方式
