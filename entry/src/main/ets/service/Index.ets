@@ -194,24 +194,26 @@ export const addTenantUserService = (tenantId:string,userId:string):Promise<type
   return httpRequest.post<types.TenantUserType>(`${api.addTenantUser}${tenantId}/${userId}`);
 }
 
+// ets/service/Index.ets
+
 /**
  * @description: 设置为管理员
  * @date: 2025-09-01 22:04
  * @author wuwenqiang
  */
-export const addAdminService = (tenantId:string,userId:string):Promise<types.MyAwesomeData<types.TenantUserType>> => {
-  const params:types.AdminParamsType = {tenantId,userId}
-  return httpRequest.post<types.TenantUserType>(api.addAdmin,params);
+export const addAdminService = (tenantId: string, userId: string): Promise<types.MyAwesomeData<types.TenantUserType>> => {
+  // 修改：使用路径参数
+  return httpRequest.post<types.TenantUserType>(`${api.addAdmin}${tenantId}/${userId}`);
 }
 
 /**
- * @description: 设置为管理员
+ * @description: 取消管理员
  * @date: 2025-09-07 09:05
  * @author wuwenqiang
  */
-export const deleteAdminService = (tenantId:string,userId:string):Promise<types.MyAwesomeData<types.TenantUserType>> => {
-  const params:types.AdminParamsType = {tenantId,userId}
-  return httpRequest.delete<types.TenantUserType>(api.deleteAdmin,params);
+export const deleteAdminService = (tenantId: string, userId: string): Promise<types.MyAwesomeData<types.TenantUserType>> => {
+  // 修改：使用路径参数
+  return httpRequest.delete<types.TenantUserType>(`${api.deleteAdmin}${tenantId}/${userId}`);
 }
 
 /**

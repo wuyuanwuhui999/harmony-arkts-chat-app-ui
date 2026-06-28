@@ -5,7 +5,9 @@ import {
   addTenantUserService,
   deleteTenantUserService,
   getTenantUserListService,
-  searchUserListService
+  searchUserListService,
+  addAdminService,
+  deleteAdminService
 } from '../service/Index';
 import NavigatorTitleComponent from '../components/NavigatorTitleComponent';
 import { TenantUserType, UserDataType, UserWithChecked, TenantType } from '../type/Index';
@@ -100,6 +102,17 @@ struct TenantManagerPage {
   }
 
   /**
+   * @description: 刷新租户用户列表
+   * @date: 2026-06-28
+   * @author wuwenqiang
+   */
+  refreshTenantUserList() {
+    this.pageNum = 1;
+    this.tenantUserList = [];
+    this.loadTenantUserList();
+  }
+
+  /**
    * @author: wuwenqiang
    * @description: 删除弹窗
    * @date: 2025-04-13 12:07
@@ -109,19 +122,36 @@ struct TenantManagerPage {
     Column() {
       Text('删除')
         .fontColor(Color.White)
-        .fontSize(16)
+        .fontSize(14)
     }
     .justifyContent(FlexAlign.Center)
     .width(80)
     .height('100%')
-    // 修改：使用 currentTenant.role 替代 tenantUser.roleType
-    .backgroundColor(((tenantUser.roleType == 1 && (this.currentTenant?.role ?? 0) === 2 || tenantUser.roleType === 0) && tenantUser.userId !== this.userData.id) ? colors.warn : colors.gray)
+    // 修改：使用 currentTenant.role 判断权限，只有超级管理员(role===2)才能删除管理员
+    .backgroundColor(((tenantUser.role == 1 && (this.currentTenant?.role ?? 0) === 2 || tenantUser.role === 0) && tenantUser.userId !== this.userData.id) ? colors.warn : colors.gray)
     .onClick(() => {
+      // 只有超级管理员才能删除，且不能删除自己
+      if (this.currentTenant?.role !== 2) {
+        promptAction.showToast({
+          message: '只有超级管理员可以删除用户',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+        return;
+      }
+      if (tenantUser.userId === this.userData.id) {
+        promptAction.showToast({
+          message: '不能删除自己',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+        return;
+      }
       this.deleteIndex = index;
       this.dialogController = new CustomDialogController({
         customStyle: false,
         builder: DialogComponent({
-          title: "是否删除租户？",
+          title: `是否删除用户 "${tenantUser.username}"？`,
           cancel: (): void => this.onCancel(),
           confirm: (): void => this.onDeleteTenantUser(),
         }),
@@ -379,6 +409,272 @@ struct TenantManagerPage {
     })
   }
 
+  /**
+   * @author: wuwenqiang
+   * @description: 设为管理员
+   * @date: 2026-06-28
+   */
+  onSetAdmin(index: number) {
+    const tenantId = this.currentTenant?.id;
+    if (!tenantId) {
+      promptAction.showToast({
+        message: '获取租户信息失败',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
+    const user = this.tenantUserList[index];
+    if (!user) return;
+
+    if (user.userId === this.userData.id) {
+      promptAction.showToast({
+        message: '不能修改自己的权限',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
+    // 修改：使用路径参数调用接口
+    addAdminService(tenantId, user.userId!).then((res) => {
+      if (res.data) {
+        promptAction.showToast({
+          message: '设为管理员成功',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+        // 更新本地数据 - 修改：role字段
+        user.role = 1;
+        this.tenantUserList.splice(index, 1, JSON.parse(JSON.stringify(user)));
+      } else {
+        promptAction.showToast({
+          message: res.msg || '操作失败',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+      }
+    }).catch((err: Error) => {
+      console.error('设为管理员失败:', JSON.stringify(err));
+      promptAction.showToast({
+        message: '设为管理员失败，请重试',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+    });
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 取消管理员
+   * @date: 2026-06-28
+   */
+  onCancelAdmin(index: number) {
+    const tenantId = this.currentTenant?.id;
+    if (!tenantId) {
+      promptAction.showToast({
+        message: '获取租户信息失败',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
+    const user = this.tenantUserList[index];
+    if (!user) return;
+
+    if (user.userId === this.userData.id) {
+      promptAction.showToast({
+        message: '不能修改自己的权限',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+
+    // 修改：使用路径参数调用接口
+    deleteAdminService(tenantId, user.userId!).then((res) => {
+      if (res.data) {
+        promptAction.showToast({
+          message: '取消管理员成功',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+        // 更新本地数据 - 修改：role字段
+        user.role = 0;
+        this.tenantUserList.splice(index, 1, JSON.parse(JSON.stringify(user)));
+      } else {
+        promptAction.showToast({
+          message: res.msg || '操作失败',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+      }
+    }).catch((err: Error) => {
+      console.error('取消管理员失败:', JSON.stringify(err));
+      promptAction.showToast({
+        message: '取消管理员失败，请重试',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+    });
+  }
+
+  /**
+   * @description: 构建用户列表项
+   * @date: 2026-06-28
+   * @author wuwenqiang
+   */
+  @Builder
+  UserItemBuilder(item: TenantUserType, index: number) {
+    Row() {
+      // 头像
+      AvaterComponent({
+        dimensions: size.middleAvater,
+        avater: item.avater
+      })
+        .margin({ right: size.middleGap })
+
+      // 用户信息：用户名 + 工号（纵向排列）
+      Column({ space: size.miniGap }) {
+        Row({ space: size.smallGap }) {
+          Text(item.username)
+            .fontSize(size.middleFont)
+            .fontColor(colors.black)
+
+          // 管理员标签
+          if (item.role === 2) {
+            Text('超级管理员')
+              .fontSize(10)
+              .fontColor(colors.primary)
+              .padding({ left: size.smallGap, right: size.smallGap, top: 2, bottom: 2 })
+              .border({
+                width: 1,
+                color: colors.primary,
+                style: BorderStyle.Solid
+              })
+              .borderRadius(4)
+          } else if (item.role === 1) {
+            Text('管理员')
+              .fontSize(10)
+              .fontColor(colors.primary)
+              .padding({ left: size.smallGap, right: size.smallGap, top: 2, bottom: 2 })
+              .border({
+                width: 1,
+                color: colors.primary,
+                style: BorderStyle.Solid
+              })
+              .borderRadius(4)
+          }
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+
+        // 工号 - 灰色显示
+        Text(item.userAccount || '暂无工号')
+          .fontSize(12)
+          .fontColor(colors.gray)
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+    }
+    .width('100%')
+    .padding({
+      top: index === 0 ? 0 : size.middleGap,
+      bottom: index === this.tenantUserList.length - 1 ? 0 : size.middleGap
+    })
+    .border({
+      width: { bottom: index === this.tenantUserList.length - 1 ? 0 : 1 },
+      color: { bottom: colors.pageBackground },
+      style: { bottom: BorderStyle.Solid }
+    })
+  }
+
+  /**
+   * @description: 滑动操作按钮（只有超级管理员 role===2 才显示）
+   * @date: 2026-06-28
+   * @author wuwenqiang
+   */
+  @Builder
+  SwipeActionBuilder(item: TenantUserType, index: number) {
+    Row() {
+      // 只有超级管理员 (role === 2) 才显示管理员操作按钮
+      if ((this.currentTenant?.role ?? 0) === 2) {
+        if (item.role > 0) {
+          // 取消管理员
+          Column() {
+            Text('取消管理员')
+              .fontColor(Color.White)
+              .fontSize(14)
+          }
+          .justifyContent(FlexAlign.Center)
+          .width(100)
+          .height('100%')
+          .backgroundColor(colors.gray)
+          .onClick(() => {
+            this.onCancelAdmin(index);
+          })
+        } else {
+          // 设为管理员
+          Column() {
+            Text('设为管理员')
+              .fontColor(Color.White)
+              .fontSize(14)
+          }
+          .justifyContent(FlexAlign.Center)
+          .width(100)
+          .height('100%')
+          .backgroundColor(colors.primary)
+          .onClick(() => {
+            this.onSetAdmin(index);
+          })
+        }
+      }
+
+      // 删除按钮 - 红色背景
+      Column() {
+        Text('删除')
+          .fontColor(Color.White)
+          .fontSize(14)
+      }
+      .justifyContent(FlexAlign.Center)
+      .width(80)
+      .height('100%')
+      .backgroundColor(colors.warn)
+      .onClick(() => {
+        // 检查删除权限
+        if ((this.currentTenant?.role ?? 0) !== 2) {
+          promptAction.showToast({
+            message: '只有超级管理员可以删除用户',
+            duration: 2000,
+            bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+          });
+          return;
+        }
+        if (item.userId === this.userData.id) {
+          promptAction.showToast({
+            message: '不能删除自己',
+            duration: 2000,
+            bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+          });
+          return;
+        }
+        this.deleteIndex = index;
+        this.dialogController = new CustomDialogController({
+          customStyle: false,
+          builder: DialogComponent({
+            title: `是否删除用户 "${item.username}"？`,
+            cancel: (): void => this.onCancel(),
+            confirm: (): void => this.onDeleteTenantUser(),
+          }),
+          alignment: DialogAlignment.Center,
+        })
+        this.dialogController?.open();
+      })
+    }
+  }
+
   build() {
     Column() {
       GlobalLoading({ controller: this.loadingController })
@@ -390,38 +686,17 @@ struct TenantManagerPage {
         List() {
           ForEach(this.tenantUserList, (item: TenantUserType, index: number) => {
             ListItem() {
-              Row() {
-                AvaterComponent({ dimensions: size.middleIcon, avater: item.avater })
-                  .margin({ right: size.middleGap })
-                Text(item.username).layoutWeight(1)
-              }
-              .border({
-                width: {
-                  bottom: 1,
-                },
-                color: {
-                  bottom: index === this.tenantUserList.length - 1 ? Color.Transparent : colors.pageBackground
-                },
-                style: {
-                  bottom: BorderStyle.Solid
-                }
-              })
-              .padding({
-                top: index === 0 ? 0 : size.middleGap,
-                bottom: index === this.tenantUserList.length - 1 ? 0 : size.middleGap
-              })
-            }.swipeAction({
+              this.UserItemBuilder(item, index)
+            }
+            .swipeAction({
               end: () => {
-                // 修改：使用 currentTenant.role 判断权限
-                const role = this.currentTenant?.role ?? 0;
-                // 只有管理员(role >= 1)才能删除
-                if (role > 0) {
-                  return this.DeleteButton(item, index)
+                // 只有超级管理员 (role===2) 才显示滑动操作
+                if ((this.currentTenant?.role ?? 0) === 2) {
+                  return this.SwipeActionBuilder(item, index)
                 }
                 return this.EmptyBuilder()
               }
             })
-
           })
         }
         .blockStyle()
