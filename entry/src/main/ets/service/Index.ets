@@ -181,8 +181,8 @@ export const getTenantUserListService = (tenantId:string,pageNum:number,pageSize
  * @date: 2025-08-16 20:14
  * @author wuwenqiang
  */
-export const searchUserListService = (keyword:string,tenantId:string,pageNum:number,pageSize:number):Promise<types.MyAwesomeData<types.UserWithChecked[]>> => {
-  return httpRequest.get<types.UserWithChecked[]>(`${api.searchUsers}?keyword=${keyword}&tenantId=${tenantId}&pageNum=${pageNum}&pageSize=${pageSize}`);
+export const searchUserListService = (keyword:string,tenantId:string,companyId:string,pageNum:number,pageSize:number):Promise<types.MyAwesomeData<types.UserWithChecked[]>> => {
+  return httpRequest.get<types.UserWithChecked[]>(`${api.searchTenantUsers}?keyword=${keyword}&tenantId=${tenantId}&companyId=${companyId}&pageNum=${pageNum}&pageSize=${pageSize}`);
 }
 
 /**

@@ -32,6 +32,7 @@ export default {
   getCompanyList: '/service/company/getCompanyList', // 获取公司列表
 
   searchUsers: "/service/company/searchUsers",// 搜索用户
+  searchTenantUsers: "/service/tenant/searchTenantUsers",// 搜索用户
   getCompanyUsers: '/service/company/getCompanyUsers',      // 获取公司用户列表
   removeCompanyUser: '/service/company/removeUser',         // 移除公司用户
   addCompanyUser: '/service/company/addUser',              // 添加公司用户
