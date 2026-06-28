@@ -1,4 +1,3 @@
-// ets/pages/UserManagePage.ets
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import router from '@ohos.router';
