@@ -115,11 +115,48 @@ export const getChatHistoryService = (tenantId:string,pageNum:number,pageSize:nu
  * @date: 2025-05-16 00:19
  * @author wuwenqiang
  */
-export const getModelListService = (companyId?: string): Promise<types.MyAwesomeData<Array<types.ChatModelType>>> => {
-  const url = companyId ? `${api.getModelList}?companyId=${companyId}` : api.getModelList;
-  console.log('[Service] getModelListService 请求URL:', url);
-  console.log('[Service] getModelListService 参数 companyId:', companyId);
-  return httpRequest.get<Array<types.ChatModelType>>(url);
+export const getModelListService = (
+  companyId: string,
+  keyword?: string
+): Promise<types.MyAwesomeData<types.ChatModelType[]>> => {
+  let url = `${api.getModelList}?companyId=${companyId}`;
+  if (keyword && keyword.trim()) {
+    url += `&keyword=${encodeURIComponent(keyword.trim())}`;
+  }
+  return httpRequest.get<types.ChatModelType[]>(url);
+}
+
+/**
+ * @description: 添加模型
+ * @date: 2026-07-06
+ * @author wuwenqiang
+ */
+export const addModelService = (
+  params: types.AddModelParams
+): Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.post<number>(api.addModel, params);
+}
+
+/**
+ * @description: 删除模型
+ * @date: 2026-07-06
+ * @author wuwenqiang
+ */
+export const deleteModelService = (
+  modelId: string
+): Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.delete<number>(`${api.deleteModel}/${modelId}`);
+}
+
+/**
+ * @description: 更新模型
+ * @date: 2026-07-06
+ * @author wuwenqiang
+ */
+export const updateModelService = (
+  params: types.UpdateModelParams
+): Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.put<number>(api.updateModel, params);
 }
 
 /**

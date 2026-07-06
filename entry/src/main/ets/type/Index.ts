@@ -72,11 +72,50 @@ export type ChatStructure = {
 }
 
 export type ChatModelType = {
-  id:number,
-  modelName:string,
-  updateTime:string,
-  createTime:string
+  id: string;           // 模型ID
+  modelName: string;    // 模型名称
+  type: ModelType;      // 模型类型：ollama 或 online
+  baseUrl: string;      // 模型地址
+  apiKey?: string;      // API Key（可选）
+  companyId: string;    // 所属公司ID
+  createTime?: string;  // 创建时间
+  updateTime?: string;  // 更新时间
 }
+
+/**
+ * @description: 添加模型请求参数
+ * @date: 2026-07-06
+ * @author wuwenqiang
+ */
+export interface AddModelParams {
+  modelName: string;
+  type: ModelType;
+  companyId: string;
+  apiKey?: string;
+  baseUrl: string;
+}
+
+/**
+ * @description: 更新模型请求参数
+ * @date: 2026-07-06
+ * @author wuwenqiang
+ */
+export interface UpdateModelParams {
+  id: string;
+  modelName: string;
+  type: ModelType;
+  companyId: string;
+  apiKey?: string;
+  baseUrl: string;
+}
+
+/**
+ * @description: 模型类型（OLLAMA 或 ONLINE）
+ * @date: 2026-07-06
+ * @author wuwenqiang
+ */
+export type ModelType = 'ollama' | 'online';
+
 export interface ChatParamsType {
   modelName:string,
   chatId:string, // 替换为实际聊天ID

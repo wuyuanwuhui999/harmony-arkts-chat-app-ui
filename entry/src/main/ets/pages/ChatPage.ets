@@ -641,6 +641,16 @@ export default struct ChatPage {
         });
       })
       Divider().height(1).color(colors.borderColor)
+      if ((this.companyData?.role ?? 0) > 0) {
+        Text("模型管理").height(size.btnHeight).onClick(() => {
+          this.showMenu = false;
+          router.pushUrl({
+            url: 'pages/ModelManagePage'
+          });
+        })
+        Divider().height(1).color(colors.borderColor)
+      }
+      // ===== 新增结束 =====
       Text("上传文档").height(size.btnHeight).onClick(this.onShowDirectoryDialog)
       Divider().height(1).color(colors.borderColor)
       Text("我的文档").height(size.btnHeight).onClick(()=>{
@@ -858,7 +868,7 @@ export default struct ChatPage {
       customStyle: true,
       builder: OptionDialogComponent({
         cancel: (): void => this.onModelDialogCancel(),
-        confirm: (value: string, index: number): void => this.onModelConfirm(value),
+        confirm: (value: string, index: number):Promise<void> => this.onModelConfirm(value),
         options: this.modelList.map((item) => item.modelName),
       }),
       alignment: DialogAlignment.Bottom,
@@ -880,9 +890,16 @@ export default struct ChatPage {
    * @description: 确认切换模型
    * @date: 2026-04-29
    */
-  onModelConfirm = (value: string) => {
+  onModelConfirm = async (value: string) => {
     this.activeModelName = value;
     this.dialogController?.close();
+
+    // 查找选中模型的ID并保存到缓存
+    const selectedModel = this.modelList.find(item => item.modelName === value);
+    if (selectedModel && this.companyData?.id) {
+      await preference.putPreference(`${this.companyData.id}:currentModelId`, selectedModel.id);
+      console.log('[ChatPage] 保存当前模型ID:', selectedModel.id);
+    }
   }
 
   /**
@@ -1166,7 +1183,7 @@ export default struct ChatPage {
    * @description: 刷新模型列表
    * @date: 2026-06-26
    */
-  refreshModelList = (companyId?: string) => {
+  refreshModelList = (companyId: string) => {
     getModelListService(companyId).then((res) => {
       if (res.data && res.data.length > 0) {
         this.modelList = res.data;

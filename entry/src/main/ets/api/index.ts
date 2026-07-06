@@ -12,7 +12,12 @@ export default {
   chat:"/service/chat/chat",// ai聊天
   getChatHistory: "/service/chat/getChatHistory",// ai聊天
   chatWs: "/service/chat/ws/chat",// ai聊天
-  getModelList: "/service/chat/getModelList",// ai聊天
+
+  getModelList: '/service/chat/getModelList', // 获取模型列表（带公司ID和关键词）
+  addModel: '/service/chat/addModel', // 添加模型
+  deleteModel: '/service/chat/deleteModel', // 删除模型
+  updateModel: '/service/chat/updateModel', // 更新模型
+
   uploadDoc: "/service/chat/uploadDoc",// 生成向量
   getDocList: "/service/chat/getDocList",// 查询我的文档
   deleteDoc: "/service/chat/deleteDoc/",// 删除我的文档
