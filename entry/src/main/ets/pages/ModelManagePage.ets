@@ -348,7 +348,7 @@ struct ModelManagePage {
   @Builder
   swipeActionBuilder(item: ChatModelType, index: number) {
     Row() {
-      // 使用按钮
+      // 使用按钮 - 当前使用中禁用
       Column() {
         Text('使用')
           .fontColor(Color.White)
@@ -357,8 +357,16 @@ struct ModelManagePage {
       .justifyContent(FlexAlign.Center)
       .width(80)
       .height('100%')
-      .backgroundColor(colors.primary)
+      .backgroundColor(this.currentModelId === item.id ? colors.gray : colors.primary)
       .onClick(() => {
+        if (this.currentModelId === item.id) {
+          promptAction.showToast({
+            message: '当前模型已在使用中',
+            duration: 2000,
+            bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+          });
+          return;
+        }
         this.useModel(index);
       })
 
@@ -376,7 +384,7 @@ struct ModelManagePage {
         this.goToUpdateModel(index);
       })
 
-      // 删除按钮（当前使用中不可删除）
+      // 删除按钮 - 当前使用中禁用
       Column() {
         Text('删除')
           .fontColor(Color.White)
@@ -386,7 +394,6 @@ struct ModelManagePage {
       .width(80)
       .height('100%')
       .backgroundColor(this.currentModelId === item.id ? colors.gray : colors.warn)
-      .enabled(this.currentModelId !== item.id)
       .onClick(() => {
         if (this.currentModelId === item.id) {
           promptAction.showToast({

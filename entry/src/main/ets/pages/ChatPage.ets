@@ -104,25 +104,20 @@ export default struct ChatPage {
       if (tenantListRes.data && tenantListRes.data.length > 0) {
         this.tenantList = tenantListRes.data;
 
-        // 2. 从缓存获取上次保存的租户ID
         const cachedTenantId = await preference.getPreference(`${this.userData.id}:tenantId`);
 
         let selectedTenant: TenantType | null = null;
 
-        // 3. 如果缓存中有租户ID，在列表中查找
         if (cachedTenantId) {
           selectedTenant = this.tenantList.find(item => item.id === cachedTenantId) || null;
         }
 
-        // 4. 如果找不到或没有缓存，取第一条
         if (!selectedTenant) {
           selectedTenant = this.tenantList[0];
         }
 
-        // 5. 设置当前租户
         if (selectedTenant) {
           this.currentTenant = selectedTenant;
-          // 保存租户ID到缓存
           await preference.putPreference(`${this.userData.id}:tenantId`, selectedTenant.id);
         }
       }
@@ -131,10 +126,18 @@ export default struct ChatPage {
     }
 
     // 6. 获取模型列表 - 传入 companyId
-    getModelListService(companyId).then((res) => {
+    getModelListService(companyId).then(async (res) => {
       if (res.data && res.data.length > 0) {
         this.modelList = res.data;
         this.activeModelName = res.data[0].modelName;
+
+        // ===== 新增：保存默认模型ID到缓存 =====
+        const defaultModel = res.data[0];
+        if (defaultModel?.id) {
+          await preference.putPreference(`${companyId}:currentModelId`, defaultModel.id);
+          console.log('[ChatPage] 初始化保存默认模型ID:', defaultModel.id);
+        }
+        // ===== 新增结束 =====
       }
     }).catch((err: Error) => {
       console.error('[ChatPage] 获取模型列表失败:', JSON.stringify(err));
