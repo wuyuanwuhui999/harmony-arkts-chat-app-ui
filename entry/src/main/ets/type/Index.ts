@@ -318,3 +318,8 @@ export interface CompanyAdminParamsType {
   userId: string;
   companyId: string;
 }
+
+export interface InsertPromptParamsType {
+  tenantId:string,
+  prompt:string
+}

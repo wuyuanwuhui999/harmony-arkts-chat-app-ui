@@ -12,6 +12,8 @@
     "pages/TenantManagerPage",
     "pages/AddTenantUserPage",
     "pages/AddCompanyUserPage",
-    "pages/UserManagePage"
+    "pages/UserManagePage",
+    "pages/PromptManagePage",
+    "pages/AddPromptPage"
   ]
 }

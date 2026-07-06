@@ -25,7 +25,8 @@ import {
   getDirectoryListService,
   getPromptService,
   updatePromptService,
-  getTenantListService
+  getTenantListService,
+  getPromptByIdService
 } from '../service/Index';
 import { PositionEnum } from '../common/enum';
 import AvaterComponent from "../components/AvaterComponent";
@@ -243,7 +244,7 @@ export default struct ChatPage {
     const companyId = companyData?.id || '';
     this.refreshModelList(companyId);
 
-    // 重新加载提示词
+    // 重新加载提示词（切换租户时重新获取）
     await this.getPrompt();
   }
 
@@ -490,7 +491,7 @@ export default struct ChatPage {
           bottom: px2vp(display.getDefaultDisplaySync().height) / 2
         });
         // 更新本地提示词数据
-        this.promptData = res.data;
+        this.promptData = promptData;
         // 关闭对话框
         this.promptDialogController?.close();
       } else {
@@ -626,6 +627,18 @@ export default struct ChatPage {
       Text("修改提示词").height(size.btnHeight).onClick(() => {
         this.showMenu = false;
         this.showPromptDialog();
+      })
+      Divider().height(1).color(colors.borderColor)
+      Text("提示词管理").height(size.btnHeight).onClick(() => {
+        this.showMenu = false;
+        // 跳转到提示词管理页面
+        router.pushUrl({
+          url: 'pages/PromptManagePage',
+          params: {
+            tenantId: this.currentTenant?.id,
+            tenantName: this.currentTenant?.name
+          }
+        });
       })
       Divider().height(1).color(colors.borderColor)
       Text("上传文档").height(size.btnHeight).onClick(this.onShowDirectoryDialog)
@@ -874,7 +887,7 @@ export default struct ChatPage {
 
   /**
    * @author: system
-   * @description: 获取提示词
+   * @description: 获取提示词（根据租户ID和缓存的提示词ID）
    * @date: 2026-04-27
    */
   getPrompt = async (): Promise<void> => {
@@ -885,9 +898,17 @@ export default struct ChatPage {
     }
 
     try {
-      const res = await getPromptService(tenantId);
+      // 从缓存获取提示词ID
+      const cachedPromptId = await preference.getPreference(`${this.userData.id}:${tenantId}:promptId`) || '';
+
+      // 调用接口获取提示词
+      const res = await getPromptByIdService(tenantId, cachedPromptId);
       if (res.data && res.data.prompt) {
         this.promptData = res.data;
+        // 如果缓存中没有promptId，将返回的prompt.id写入缓存
+        if (!cachedPromptId && res.data.id) {
+          await preference.putPreference(`${this.userData.id}:${tenantId}:promptId`, res.data.id);
+        }
       }
     } catch (error) {
       console.error('[ChatPage] 获取提示词失败:', JSON.stringify(error));

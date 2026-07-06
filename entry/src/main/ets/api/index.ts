@@ -27,8 +27,6 @@ export default {
   addAdmin: "/service/tenant/addAdmin/",        // 添加管理员（路径参数）
   deleteAdmin: "/service/tenant/deleteAdmin/",  // 取消管理员（路径参数）
   deleteTenantUser: "/service/tenant/deleteTenantUser",// 删除用户
-  getPrompt: '/service/prompt/getPrompt', // 获取提示词
-  updatePrompt: '/service/prompt/updatePrompt', // 更新提示词
   getCompanyList: '/service/company/getCompanyList', // 获取公司列表
 
   searchUsers: "/service/company/searchUsers",// 搜索用户
@@ -40,4 +38,10 @@ export default {
   getPositions: '/service/company/getPositions',            // 获取职位列表
   setAdmin: '/service/company/setAdmin',                   // 设为管理员
   cancelAdmin: '/service/company/cancelAdmin',             // 取消管理员
+
+  getPrompt: '/service/prompt/getPrompt', // 获取提示词
+  updatePrompt: '/service/prompt/updatePrompt', // 更新提示词
+  getPromptList: '/service/prompt/getPromptList', // 获取提示词列表
+  deletePrompt: '/service/prompt/deletePrompt', // 删除提示词
+  insertPrompt: '/service/prompt/insertPrompt', // 添加提示词
 };

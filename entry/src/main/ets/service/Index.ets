@@ -235,15 +235,6 @@ export const getPromptService = (tenantId: string): Promise<types.MyAwesomeData<
 }
 
 /**
- * @description: 更新提示词
- * @date: 2026-04-27
- * @author: wuwenqiang
- */
-export const updatePromptService = (promptData: types.PromptInterface): Promise<types.MyAwesomeData<types.PromptInterface>> => {
-  return httpRequest.put<types.PromptInterface>(api.updatePrompt, promptData);
-}
-
-/**
  * @description: 获取公司列表
  * @date: 2026-06-25
  * @author wuwenqiang
@@ -334,4 +325,50 @@ export const setAdminService = (userId: string, companyId: string): Promise<type
 export const cancelAdminService = (userId: string, companyId: string): Promise<types.MyAwesomeData<number>> => {
   const params: types.CompanyAdminParamsType = { userId, companyId };
   return httpRequest.post<number>(api.cancelAdmin, params);
+}
+
+/**
+ * @description: 获取提示词（根据租户ID和提示词ID）
+ * @date: 2026-07-06
+ * @author wuwenqiang
+ */
+export const getPromptByIdService = (tenantId: string, promptId: string): Promise<types.MyAwesomeData<types.PromptInterface>> => {
+  return httpRequest.get<types.PromptInterface>(`${api.getPrompt}?tenantId=${tenantId}&promptId=${promptId}`);
+}
+
+/**
+ * @description: 获取提示词列表
+ * @date: 2026-07-06
+ * @author wuwenqiang
+ */
+export const getPromptListService = (tenantId: string, keyword: string): Promise<types.MyAwesomeData<types.PromptInterface[]>> => {
+  return httpRequest.get<types.PromptInterface[]>(`${api.getPromptList}?tenantId=${tenantId}&keyword=${encodeURIComponent(keyword)}`);
+}
+
+/**
+ * @description: 删除提示词
+ * @date: 2026-07-06
+ * @author wuwenqiang
+ */
+export const deletePromptService = (promptId: string): Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.delete<number>(`${api.deletePrompt}/${promptId}`);
+}
+
+/**
+ * @description: 更新提示词
+ * @date: 2026-07-06
+ * @author wuwenqiang
+ */
+export const updatePromptService = (promptData: types.PromptInterface): Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.put<number>(api.updatePrompt, promptData);
+}
+
+/**
+ * @description: 添加提示词
+ * @date: 2026-07-06
+ * @author wuwenqiang
+ */
+export const insertPromptService = (prompt: string, tenantId: string): Promise<types.MyAwesomeData<number>> => {
+  const params :types.InsertPromptParamsType = { prompt, tenantId }
+  return httpRequest.post<number>(api.insertPrompt, params);
 }
