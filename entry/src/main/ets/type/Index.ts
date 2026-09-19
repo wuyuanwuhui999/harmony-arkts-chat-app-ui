@@ -120,6 +120,7 @@ export interface ChatParamsType {
   modelName:string,
   chatId:string, // 替换为实际聊天ID
   prompt: string,// 提示词
+  promptId: string,// 使用的提示词id
   type:string,//查询的类型
   showThink:boolean,// 是否显示思考内容
   language:string//语言
@@ -361,4 +362,59 @@ export interface CompanyAdminParamsType {
 export interface InsertPromptParamsType {
   tenantId:string,
   prompt:string
+}
+
+/**
+ * @description: 分页查询提示词列表参数
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export interface GetPromptListParamsType {
+  tenantId: string; // 租户id
+  keyword: string; // 搜索关键字
+  pageSize: number; // 每页条数
+  pageNum: number; // 页码
+}
+
+/**
+ * @description: 更新提示词参数
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export interface UpdatePromptParamsType {
+  id: string; // 提示词id
+  prompt: string; // 提示词内容
+}
+
+/**
+ * @description: 目录及其下的文档列表（选择文档对话框使用）
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export interface DirectoryDocType {
+  directoryId: string; // 目录id
+  directoryName: string; // 目录名称
+  expanded: boolean; // 目录是否展开
+  docList: DocumentType[]; // 目录下的文档列表
+}
+
+/**
+ * @description: 创建目录参数
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export interface CreateDirectoryParamsType {
+  directory: string; // 目录名称
+  tenantId: string; // 租户id
+}
+
+/**
+ * @description: 上传文件参数（沙箱中的真实文件）
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export interface UploadFileType {
+  filePath: string; // 沙箱文件路径
+  fileName: string; // 文件名（含后缀）
+  contentType: string; // 文件类型（MIME）
 }

@@ -15,6 +15,7 @@
     "pages/UserManagePage",
     "pages/PromptManagePage",
     "pages/AddPromptPage",
+    "pages/UpdatePromptPage",
     "pages/ModelManagePage",
     "pages/AddModelPage",
     "pages/UpdateModelPage"

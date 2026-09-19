@@ -1,6 +1,6 @@
 import http from '@ohos.net.http';
 import { HOST } from '../common/constant';
-import { MyAwesomeData } from '../type/Index'
+import { MyAwesomeData, UploadFileType } from '../type/Index'
 import promptAction from '@ohos.promptAction';
 import display from '@ohos.display';
 
@@ -138,6 +138,58 @@ class HttpRequest {
    */
   public put<T>(url: string, data?: Object): Promise<MyAwesomeData<T>> {
     return this.request<T>(url, { method: http.RequestMethod.PUT, extraData: data })
+  }
+
+  /**
+   * @description: 上传文件请求函数（multipart/form-data），用于文档上传等文件类接口
+   * @param {string} url 请求地址
+   * @param {UploadFileType} file 待上传文件（沙箱路径、文件名、文件类型）
+   * @return {Promise<MyAwesomeData<T>>}
+   */
+  public upload<T>(url: string, file: UploadFileType): Promise<MyAwesomeData<T>> {
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      connectTimeout: 60000,
+      readTimeout: 60000,
+      header: {
+        "content-type": "multipart/form-data",
+        "Authorization": !/^Bearer\s/.test(this.token) ? `Bearer ${this.token}` : this.token
+      },
+      multiFormDataList: [
+        {
+          name: 'file',
+          contentType: file.contentType,
+          remoteFileName: file.fileName,
+          filePath: file.filePath
+        }
+      ]
+    };
+    const httpRequest = http.createHttp();
+    return new Promise((resolve, reject) => {
+      httpRequest.request(HOST + url, options).then((response: http.HttpResponse) => {
+        const result: MyAwesomeData<T> = JSON.parse(response.result.toString()) as MyAwesomeData<T>
+        if (result.status == STATUS.SUCCESS) {
+          resolve(result)
+        } else {
+          promptAction.showToast({
+            message: result.msg,
+            duration: 2000,
+            bottom: px2fp(display.getDefaultDisplaySync().height) / 2
+          });
+          reject(result)
+        }
+      }).catch((err: Error) => {
+        promptAction.showToast({
+          message: `上传失败，地址：${HOST + url}，文件名：${file.fileName}，错误信息： ${JSON.stringify(err)}`,
+          duration: 2000,
+          bottom: px2fp(display.getDefaultDisplaySync().height) / 2
+        });
+        reject(err);
+      }).finally(() => {
+        // 当该请求使用完毕时，调用destroy方法主动销毁。
+        httpRequest.destroy();
+      });
+    })
   }
 }
 

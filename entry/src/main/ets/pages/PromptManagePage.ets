@@ -2,7 +2,7 @@
 import * as colors from '../theme/color';
 import * as size from '../theme/size';
 import router from '@ohos.router';
-import { PromptInterface, UserDataType } from '../type/Index';
+import { PromptInterface, UserDataType, UpdatePromptParamsType } from '../type/Index';
 import {
   getPromptListService,
   deletePromptService,
@@ -14,7 +14,7 @@ import LoadingController from '../controller/LoadingController';
 import NavigatorTitleComponent from '../components/NavigatorTitleComponent';
 import DialogComponent from '../components/DialogComponent';
 import preference from '../utils/PreferenceModel';
-import { USER_DATA } from '../common/constant';
+import { USER_DATA, PAGE_SIZE } from '../common/constant';
 
 @Entry
 @Component
@@ -78,7 +78,12 @@ struct PromptManagePage {
    */
   loadPromptList() {
     this.loadingController.showLoading();
-    getPromptListService(this.tenantId, this.keyword.trim())
+    getPromptListService({
+      tenantId: this.tenantId,
+      keyword: this.keyword.trim(),
+      pageSize: PAGE_SIZE,
+      pageNum: 1
+    })
       .then((res) => {
         this.promptList = res.data || [];
       })
@@ -168,7 +173,7 @@ struct PromptManagePage {
     if (!prompt) return;
 
     this.loadingController.showLoading();
-    deletePromptService(prompt.id).then((res) => {
+    deletePromptService(prompt.id, this.tenantId).then((res) => {
       if (res.data > 0) {
         promptAction.showToast({
           message: '删除成功',
@@ -309,14 +314,12 @@ struct PromptManagePage {
     }
 
     this.loadingController.showLoading();
-    const promptData: PromptInterface = {
+    const params: UpdatePromptParamsType = {
       id: this.editPromptId,
-      tenantId: this.tenantId,
-      userId: '',
       prompt: this.editPromptContent.trim()
     };
 
-    updatePromptService(promptData).then((res) => {
+    updatePromptService(params).then((res) => {
       if (res.data > 0) {
         promptAction.showToast({
           message: '更新成功',

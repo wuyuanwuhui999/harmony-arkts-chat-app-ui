@@ -117,3 +117,24 @@ export const formatTimeAgo = (createTime:string)=> {
     return `${yearsDiff}年前`
   }
 }
+
+/**
+ * @description: 根据文件名后缀获取上传文件的 MIME 类型
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export const getFileContentType = (fileName: string): string => {
+  const suffix = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+  switch (suffix) {
+    case '.txt':
+      return 'text/plain';
+    case '.pdf':
+      return 'application/pdf';
+    case '.doc':
+      return 'application/msword';
+    case '.docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    default:
+      return 'application/octet-stream';
+  }
+}

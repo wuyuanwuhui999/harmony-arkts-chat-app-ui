@@ -22,6 +22,7 @@ export default {
   getDocList: "/service/chat/getDocList",// 查询我的文档
   deleteDoc: "/service/chat/deleteDoc/",// 删除我的文档
   getDirectoryList: "/service/chat/getDirectoryList",// 查询目录列表
+  getDocListByDirId: "/service/chat/getDocListByDirId",// 查询目录下的文档列表
   createDir: "/service/chat/createDir",// 创建目录
   renameDir: "/service/chat/renameDir",// 重命名目录
   deleteDir: "/service/chat/deleteDir/",// 删除目录
@@ -47,6 +48,6 @@ export default {
   getPrompt: '/service/prompt/getPrompt', // 获取提示词
   updatePrompt: '/service/prompt/updatePrompt', // 更新提示词
   getPromptList: '/service/prompt/getPromptList', // 获取提示词列表
-  deletePrompt: '/service/prompt/deletePrompt', // 删除提示词
+  deletePrompt: '/service/prompt/deletePrompt/', // 删除提示词
   insertPrompt: '/service/prompt/insertPrompt', // 添加提示词
 };

@@ -187,12 +187,30 @@ export const getDirectoryListService = (tenantId:string):Promise<types.MyAwesome
 }
 
 /**
- * @description: 创建目录
- * @date: 2025-07-27 12:42
+ * @description: 获取指定目录下的文档列表
+ * @date: 2026-09-19
  * @author wuwenqiang
  */
-export const createDirectoryService = (directory:types.DirectoryType):Promise<types.MyAwesomeData<types.DirectoryType>> => {
-  return httpRequest.post<types.DirectoryType>(api.createDir,directory);
+export const getDocListByDirIdService = (tenantId: string, directoryId: string):Promise<types.MyAwesomeData<types.DocumentType[]>> => {
+  return httpRequest.get<types.DocumentType[]>(`${api.getDocListByDirId}?tenantId=${tenantId}&directoryId=${directoryId}`);
+}
+
+/**
+ * @description: 创建目录
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export const createDirectoryService = (params: types.CreateDirectoryParamsType):Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.post<number>(api.createDir, params);
+}
+
+/**
+ * @description: 上传文档
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export const uploadDocService = (tenantId: string, directoryId: string, file: types.UploadFileType):Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.upload<number>(`${api.uploadDoc}/${tenantId}/${directoryId}`, file);
 }
 
 /**
@@ -260,15 +278,6 @@ export const deleteAdminService = (tenantId: string, userId: string): Promise<ty
  */
 export const deleteTenantUserService = (tenantId:string,userId:string):Promise<types.MyAwesomeData<boolean>> => {
   return httpRequest.delete<boolean>(`${api.deleteTenantUser}/${tenantId}/${userId}`);
-}
-
-/**
- * @description: 获取提示词
- * @date: 2026-04-27
- * @author: wuwenqiang
- */
-export const getPromptService = (tenantId: string): Promise<types.MyAwesomeData<types.PromptInterface>> => {
-  return httpRequest.get<types.PromptInterface>(`${api.getPrompt}?tenantId=${tenantId}`);
 }
 
 /**
@@ -365,47 +374,39 @@ export const cancelAdminService = (userId: string, companyId: string): Promise<t
 }
 
 /**
- * @description: 获取提示词（根据租户ID和提示词ID）
- * @date: 2026-07-06
+ * @description: 分页获取提示词列表
+ * @date: 2026-09-19
  * @author wuwenqiang
  */
-export const getPromptByIdService = (tenantId: string, promptId: string): Promise<types.MyAwesomeData<types.PromptInterface>> => {
-  return httpRequest.get<types.PromptInterface>(`${api.getPrompt}?tenantId=${tenantId}&promptId=${promptId}`);
-}
-
-/**
- * @description: 获取提示词列表
- * @date: 2026-07-06
- * @author wuwenqiang
- */
-export const getPromptListService = (tenantId: string, keyword: string): Promise<types.MyAwesomeData<types.PromptInterface[]>> => {
-  return httpRequest.get<types.PromptInterface[]>(`${api.getPromptList}?tenantId=${tenantId}&keyword=${encodeURIComponent(keyword)}`);
+export const getPromptListService = (params: types.GetPromptListParamsType): Promise<types.MyAwesomeData<types.PromptInterface[]>> => {
+  const url = `${api.getPromptList}?tenantId=${params.tenantId}&keyword=${encodeURIComponent(params.keyword)}&pageSize=${params.pageSize}&pageNum=${params.pageNum}`;
+  return httpRequest.get<types.PromptInterface[]>(url);
 }
 
 /**
  * @description: 删除提示词
- * @date: 2026-07-06
+ * @date: 2026-09-19
  * @author wuwenqiang
  */
-export const deletePromptService = (promptId: string): Promise<types.MyAwesomeData<number>> => {
-  return httpRequest.delete<number>(`${api.deletePrompt}/${promptId}`);
+export const deletePromptService = (promptId: string, tenantId: string): Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.delete<number>(`${api.deletePrompt}${promptId}/${tenantId}`);
 }
 
 /**
  * @description: 更新提示词
- * @date: 2026-07-06
+ * @date: 2026-09-19
  * @author wuwenqiang
  */
-export const updatePromptService = (promptData: types.PromptInterface): Promise<types.MyAwesomeData<number>> => {
-  return httpRequest.put<number>(api.updatePrompt, promptData);
+export const updatePromptService = (params: types.UpdatePromptParamsType): Promise<types.MyAwesomeData<number>> => {
+  return httpRequest.put<number>(api.updatePrompt, params);
 }
 
 /**
  * @description: 添加提示词
- * @date: 2026-07-06
+ * @date: 2026-09-19
  * @author wuwenqiang
  */
-export const insertPromptService = (prompt: string, tenantId: string): Promise<types.MyAwesomeData<number>> => {
-  const params :types.InsertPromptParamsType = { prompt, tenantId }
+export const insertPromptService = (tenantId: string, prompt: string): Promise<types.MyAwesomeData<number>> => {
+  const params: types.InsertPromptParamsType = { tenantId, prompt };
   return httpRequest.post<number>(api.insertPrompt, params);
 }
