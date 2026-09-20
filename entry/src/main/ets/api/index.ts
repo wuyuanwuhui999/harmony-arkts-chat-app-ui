@@ -18,7 +18,7 @@ export default {
   deleteModel: '/service/chat/deleteModel', // 删除模型
   updateModel: '/service/chat/updateModel', // 更新模型
 
-  uploadDoc: "/service/chat/uploadDoc",// 生成向量
+  uploadDoc: "/service/chat/uploadDoc",// 上传文档（租户、目录等参数放在请求体中）
   getDocList: "/service/chat/getDocList",// 查询我的文档
   deleteDoc: "/service/chat/deleteDoc/",// 删除我的文档
   getDirectoryList: "/service/chat/getDirectoryList",// 查询目录列表

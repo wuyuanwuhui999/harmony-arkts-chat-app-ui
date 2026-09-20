@@ -209,8 +209,16 @@ export const createDirectoryService = (params: types.CreateDirectoryParamsType):
  * @date: 2026-09-19
  * @author wuwenqiang
  */
-export const uploadDocService = (tenantId: string, directoryId: string, file: types.UploadFileType):Promise<types.MyAwesomeData<number>> => {
-  return httpRequest.upload<number>(`${api.uploadDoc}/${tenantId}/${directoryId}`, file);
+export const uploadDocService = (params: types.UploadDocParamsType, file: types.UploadFileType):Promise<types.MyAwesomeData<number>> => {
+  // 租户、目录、权限、分割模式、分割大小都放到 multipart 表单中传递
+  const formDataList: Array<types.UploadFormDataType> = [
+    { name: 'tenantId', value: params.tenantId },
+    { name: 'directoryId', value: params.directoryId },
+    { name: 'permission', value: params.permission },
+    { name: 'splitMethod', value: params.splitMethod },
+    { name: 'chunkSize', value: params.chunkSize }
+  ];
+  return httpRequest.upload<number>(api.uploadDoc, file, formDataList);
 }
 
 /**

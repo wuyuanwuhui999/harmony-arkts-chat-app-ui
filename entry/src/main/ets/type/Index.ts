@@ -418,3 +418,36 @@ export interface UploadFileType {
   fileName: string; // 文件名（含后缀）
   contentType: string; // 文件类型（MIME）
 }
+
+/**
+ * @description: 上传文档接口的请求参数（放在 multipart 表单中，不再放在地址上）
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export interface UploadDocParamsType {
+  tenantId: string; // 租户id
+  directoryId: string; // 目录id
+  permission: string; // 文档权限：private-私密、tenant-租户内公开、company-公司内公开
+  splitMethod: string; // 分割模式：recursive/paragraph/sentence/fixed
+  chunkSize: string; // 分割大小，固定长度分割时生效
+}
+
+/**
+ * @description: multipart 表单普通字段（name-字段名，value-字段值）
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export interface UploadFormDataType {
+  name: string;
+  value: string;
+}
+
+/**
+ * @description: 下拉选项（value-提交给后端的参数值，label-界面显示名称）
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export interface SelectOptionType {
+  value: string;
+  label: string;
+}

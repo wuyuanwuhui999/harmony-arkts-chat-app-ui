@@ -16,6 +16,8 @@ import {
   DirectoryDocType,
   CreateDirectoryParamsType,
   UploadFileType,
+  UploadDocParamsType,
+  SelectOptionType,
   PromptInterface,
   GetPromptListParamsType,
   CompanyType
@@ -35,7 +37,7 @@ import {
 } from '../service/Index';
 import { PositionEnum } from '../common/enum';
 import AvaterComponent from "../components/AvaterComponent";
-import { USER_DATA, COMPANY_DATA, PAGE_SIZE, HOST, PROMPT_ID } from '../common/constant';
+import { USER_DATA, COMPANY_DATA, PAGE_SIZE, HOST, PROMPT_ID, DOC_PERMISSION_OPTIONS, DOC_SPLIT_METHOD_OPTIONS, DEFAULT_CHUNK_SIZE } from '../common/constant';
 import { formatTimeAgo, generateSecureID, formatTime} from "../utils/common";
 import { pickDocumentFile } from "../utils/FileUtil";
 import { display, promptAction } from '@kit.ArkUI';
@@ -47,6 +49,15 @@ import OptionDialogComponent from '../components/OptionDialogComponent';
 import DialogComponent from "../components/DialogComponent";
 import BottomDialogComponent from "../components/BottomDialogComponent";
 import MarkdownRenderer from "../components/MarkdownRenderer";
+
+// 文档设置对话框的权限下拉选项（label 用于界面显示，value 提交给后端）
+const PERMISSION_SELECT_OPTIONS: Array<SelectOption> = DOC_PERMISSION_OPTIONS.map((item: SelectOptionType): SelectOption => {
+  return { value: item.label };
+});
+// 文档设置对话框的分割模式下拉选项
+const SPLIT_METHOD_SELECT_OPTIONS: Array<SelectOption> = DOC_SPLIT_METHOD_OPTIONS.map((item: SelectOptionType): SelectOption => {
+  return { value: item.label };
+});
 
 @Entry
 export default struct ChatPage {
@@ -82,6 +93,12 @@ export default struct ChatPage {
   private createDirDialogController: CustomDialogController | null = null;
   private uploadDialogController: CustomDialogController | null = null;
   private snapshotCheckedDocIds: string[] = []; // 打开选择文档对话框时的已选文档快照
+  @State permissionIndex: number = 0; // 文档权限下拉选中项，默认 private（私密）
+  @State splitMethodIndex: number = 0; // 分割模式下拉选中项，默认 recursive（递归字符分割）
+  @State chunkSize: string = `${DEFAULT_CHUNK_SIZE}`; // 分割大小，默认1000，仅固定长度分割使用
+  @State selectedFileName: string = ''; // 待上传的文件名称
+  private pendingUploadFile: UploadFileType | null = null; // 待上传的文件（文档设置确定后再上传）
+  private docSettingDialogController: CustomDialogController | null = null;
   private message: string = "";
   private dialogController: CustomDialogController | null = null
   private ws: webSocket.WebSocket | null = null;
@@ -1468,7 +1485,7 @@ export default struct ChatPage {
 
   /**
    * @author: wuwenqiang
-   * @description: 选择系统文件并上传文档
+   * @description: 选择系统文件，选好文件后弹出文档设置对话框
    * @date: 2026-09-19
    */
   confirmUpload = (): void => {
@@ -1481,22 +1498,191 @@ export default struct ChatPage {
       if (!file) {
         return;
       }
-      const directoryId: string = this.uploadDirectoryId;
+      // 暂存选中的文件，关闭选择目录对话框，弹出文档设置对话框
+      this.pendingUploadFile = file;
+      this.selectedFileName = file.fileName;
+      this.permissionIndex = 0;
+      this.splitMethodIndex = 0;
+      this.chunkSize = `${DEFAULT_CHUNK_SIZE}`;
       this.uploadDialogController?.close();
-      uploadDocService(tenantId, directoryId, file).then((res) => {
-        promptAction.showToast({
-          message: '上传成功',
-          duration: 2000,
-          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-        });
-        // 目标目录已经展开时刷新该目录下的文档列表
-        const index: number = this.docDirList.findIndex((item: DirectoryDocType) => item.directoryId === directoryId);
-        if (index > -1 && this.docDirList[index].expanded) {
-          this.loadDirectoryDocList(index);
-        }
-      }).catch((err: Error) => {
-        console.error('[ChatPage] 上传文档失败:', JSON.stringify(err));
+      this.docSettingDialogController = new CustomDialogController({
+        customStyle: true,
+        builder: this.docSettingDialogBuilder.bind(this),
+        alignment: DialogAlignment.Center,
       })
+      this.docSettingDialogController.open()
+    })
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 确定文档设置后上传文档，把文件与 permission、splitMethod、chunkSize 一起提交
+   * @date: 2026-09-19
+   */
+  uploadDocument = (): void => {
+    const tenantId = this.currentTenant?.id;
+    const file = this.pendingUploadFile;
+    if (!tenantId || !file || !this.uploadDirectoryId) {
+      return;
+    }
+    const splitMethod: string = DOC_SPLIT_METHOD_OPTIONS[this.splitMethodIndex].value;
+    // 固定长度分割必须填写分割大小
+    if (splitMethod === 'fixed' && !(Number(this.chunkSize) > 0)) {
+      promptAction.showToast({
+        message: '请输入正确的分割大小',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      return;
+    }
+    const params: UploadDocParamsType = {
+      tenantId: tenantId,
+      directoryId: this.uploadDirectoryId,
+      permission: DOC_PERMISSION_OPTIONS[this.permissionIndex].value,
+      splitMethod: splitMethod,
+      chunkSize: this.chunkSize.trim()
+    };
+    const directoryId: string = this.uploadDirectoryId;
+    uploadDocService(params, file).then((res) => {
+      this.docSettingDialogController?.close();
+      this.pendingUploadFile = null;
+      this.selectedFileName = '';
+      promptAction.showToast({
+        message: '上传成功',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      // 目标目录已经展开时刷新该目录下的文档列表
+      const index: number = this.docDirList.findIndex((item: DirectoryDocType) => item.directoryId === directoryId);
+      if (index > -1 && this.docDirList[index].expanded) {
+        this.loadDirectoryDocList(index);
+      }
+    }).catch((err: Error) => {
+      console.error('[ChatPage] 上传文档失败:', JSON.stringify(err));
+    })
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 文档设置对话框内容构建器（权限、分割模式、分割大小）
+   * @date: 2026-09-19
+   */
+  @Builder
+  docSettingDialogBuilder() {
+    Column({ space: size.middleGap }) {
+      Text('文档设置')
+        .fontSize(size.bigFont)
+        .fontWeight(FontWeight.Medium)
+        .margin({ top: size.middleGap })
+
+      // 待上传的文件名称
+      Text(this.selectedFileName)
+        .fontSize(size.middleFont)
+        .fontColor(colors.gray)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .width('100%')
+
+      // 权限下拉框
+      Row({ space: size.smallGap }) {
+        Text('权限')
+          .fontSize(size.middleFont)
+          .width('25%')
+        Select(PERMISSION_SELECT_OPTIONS)
+          .selected(this.permissionIndex)
+          .value(DOC_PERMISSION_OPTIONS[this.permissionIndex].label)
+          .font({ size: size.middleFont })
+          .optionFont({ size: size.middleFont })
+          .layoutWeight(1)
+          .onSelect((index: number) => {
+            this.permissionIndex = index;
+          })
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
+
+      // 分割模式下拉框
+      Row({ space: size.smallGap }) {
+        Text('分割模式')
+          .fontSize(size.middleFont)
+          .width('25%')
+        Select(SPLIT_METHOD_SELECT_OPTIONS)
+          .selected(this.splitMethodIndex)
+          .value(DOC_SPLIT_METHOD_OPTIONS[this.splitMethodIndex].label)
+          .font({ size: size.middleFont })
+          .optionFont({ size: size.middleFont })
+          .layoutWeight(1)
+          .onSelect((index: number) => {
+            this.splitMethodIndex = index;
+          })
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
+
+      // 分割大小输入框：只对固定长度分割可见
+      if (DOC_SPLIT_METHOD_OPTIONS[this.splitMethodIndex].value === 'fixed') {
+        Row({ space: size.smallGap }) {
+          Text('分割大小')
+            .fontSize(size.middleFont)
+            .width('25%')
+          TextInput({
+            text: this.chunkSize,
+            placeholder: '请输入分割大小'
+          })
+            .type(InputType.Number)
+            .height(size.inputHeight)
+            .layoutWeight(1)
+            .backgroundColor(colors.pageBackground)
+            .borderRadius(size.inputHeight / 2)
+            .padding({ left: size.middleGap, right: size.middleGap })
+            .onChange((value: string) => {
+              this.chunkSize = value;
+            })
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+      }
+
+      // 取消/确定按钮
+      Row({ space: size.middleGap }) {
+        Text('取消')
+          .width('45%')
+          .height(size.btnHeight)
+          .textAlign(TextAlign.Center)
+          .fontColor(colors.gray)
+          .border({
+            width: 1,
+            color: colors.gray,
+            style: BorderStyle.Solid
+          })
+          .borderRadius(size.btnHeight / 2)
+          .onClick(() => {
+            // 取消本次上传
+            this.pendingUploadFile = null;
+            this.selectedFileName = '';
+            this.docSettingDialogController?.close();
+          })
+
+        Text('确定')
+          .width('45%')
+          .height(size.btnHeight)
+          .textAlign(TextAlign.Center)
+          .fontColor(Color.White)
+          .backgroundColor(colors.primary)
+          .borderRadius(size.btnHeight / 2)
+          .onClick(() => {
+            this.uploadDocument();
+          })
+      }
+      .width('100%')
+      .margin({ bottom: size.middleGap })
+    }
+    .width('90%')
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .padding({
+      left: size.middleGap,
+      right: size.middleGap
     })
   }
 

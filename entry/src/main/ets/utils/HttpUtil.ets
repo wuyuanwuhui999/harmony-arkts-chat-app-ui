@@ -1,6 +1,6 @@
 import http from '@ohos.net.http';
 import { HOST } from '../common/constant';
-import { MyAwesomeData, UploadFileType } from '../type/Index'
+import { MyAwesomeData, UploadFileType, UploadFormDataType } from '../type/Index'
 import promptAction from '@ohos.promptAction';
 import display from '@ohos.display';
 
@@ -144,9 +144,28 @@ class HttpRequest {
    * @description: 上传文件请求函数（multipart/form-data），用于文档上传等文件类接口
    * @param {string} url 请求地址
    * @param {UploadFileType} file 待上传文件（沙箱路径、文件名、文件类型）
+   * @param {Array<UploadFormDataType>} formDataList 除文件外的普通表单字段（如 tenantId、permission、splitMethod 等）
    * @return {Promise<MyAwesomeData<T>>}
    */
-  public upload<T>(url: string, file: UploadFileType): Promise<MyAwesomeData<T>> {
+  public upload<T>(url: string, file: UploadFileType, formDataList?: Array<UploadFormDataType>): Promise<MyAwesomeData<T>> {
+    const multiFormDataList: Array<http.MultiFormData> = [
+      {
+        name: 'file',
+        contentType: file.contentType,
+        remoteFileName: file.fileName,
+        filePath: file.filePath
+      }
+    ];
+    // 把普通表单字段一并放进 multipart 表单中
+    if (formDataList) {
+      formDataList.forEach((item: UploadFormDataType) => {
+        multiFormDataList.push({
+          name: item.name,
+          contentType: 'text/plain',
+          data: item.value
+        });
+      });
+    }
     const options: http.HttpRequestOptions = {
       method: http.RequestMethod.POST,
       connectTimeout: 60000,
@@ -155,14 +174,7 @@ class HttpRequest {
         "content-type": "multipart/form-data",
         "Authorization": !/^Bearer\s/.test(this.token) ? `Bearer ${this.token}` : this.token
       },
-      multiFormDataList: [
-        {
-          name: 'file',
-          contentType: file.contentType,
-          remoteFileName: file.fileName,
-          filePath: file.filePath
-        }
-      ]
+      multiFormDataList: multiFormDataList
     };
     const httpRequest = http.createHttp();
     return new Promise((resolve, reject) => {
