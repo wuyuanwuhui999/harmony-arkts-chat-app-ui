@@ -178,6 +178,16 @@ export const deleteMyDocumentService = (docId:string):Promise<types.MyAwesomeDat
 }
 
 /**
+ * @description: 修改文档权限
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export const updateDocPermissionService = (docId: string, permission: string):Promise<types.MyAwesomeData<number>> => {
+  const params: types.UpdateDocPermissionParamsType = { permission };
+  return httpRequest.put<number>(`${api.updateDocPermission}${docId}`, params);
+}
+
+/**
  * @description: 获取目录列表
  * @date: 2025-07-26 20:21
  * @author wuwenqiang

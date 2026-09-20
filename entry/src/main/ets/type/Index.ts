@@ -195,6 +195,7 @@ export interface DocumentType {
   updateTime: string// 更新时间
   directoryId:string// 目录id
   directoryName:string;// 目录名称
+  permission?:string;// 文档权限：private-私密、tenant-租户内公开、company-公司内公开
   checked?:boolean;// 是否选中
 };
 
@@ -450,4 +451,13 @@ export interface UploadFormDataType {
 export interface SelectOptionType {
   value: string;
   label: string;
+}
+
+/**
+ * @description: 修改文档权限参数
+ * @date: 2026-09-19
+ * @author wuwenqiang
+ */
+export interface UpdateDocPermissionParamsType {
+  permission: string; // 文档权限：private-私密、tenant-租户内公开、company-公司内公开
 }

@@ -25,11 +25,11 @@ import {
 import {
   getModelListService,
   getChatHistoryService,
-  getMyDocumentService,
   deleteMyDocumentService,
   getDirectoryListService,
   getDocListByDirIdService,
   createDirectoryService,
+  updateDocPermissionService,
   uploadDocService,
   getPromptListService,
   deletePromptService,
@@ -38,7 +38,7 @@ import {
 import { PositionEnum } from '../common/enum';
 import AvaterComponent from "../components/AvaterComponent";
 import { USER_DATA, COMPANY_DATA, PAGE_SIZE, HOST, PROMPT_ID, DOC_PERMISSION_OPTIONS, DOC_SPLIT_METHOD_OPTIONS, DEFAULT_CHUNK_SIZE } from '../common/constant';
-import { formatTimeAgo, generateSecureID, formatTime} from "../utils/common";
+import { formatTimeAgo, generateSecureID } from "../utils/common";
 import { pickDocumentFile } from "../utils/FileUtil";
 import { display, promptAction } from '@kit.ArkUI';
 import webSocket from '@ohos.net.webSocket';
@@ -72,7 +72,6 @@ export default struct ChatPage {
   @State token: string = "";
   @State showHistory: boolean = false;
   private scroller: Scroller = new Scroller()
-  private myDocList: DocumentType[] = [];
   @State chatList: Array<ChatType> = [
     {
       responseContent: "你好，我是智能音乐助手小吴同学，请问有什么可以帮助您？",
@@ -99,6 +98,11 @@ export default struct ChatPage {
   @State selectedFileName: string = ''; // 待上传的文件名称
   private pendingUploadFile: UploadFileType | null = null; // 待上传的文件（文档设置确定后再上传）
   private docSettingDialogController: CustomDialogController | null = null;
+  @State docPermissionIndex: number = 0; // 修改文档权限下拉选中项
+  private currentDocId: string = ''; // 当前操作的文档id
+  private currentDocDirectoryId: string = ''; // 当前文档所在的目录id
+  private updatePermissionDialogController: CustomDialogController | null = null;
+  private deleteDocDialogController: CustomDialogController | null = null;
   private message: string = "";
   private dialogController: CustomDialogController | null = null
   private ws: webSocket.WebSocket | null = null;
@@ -288,30 +292,47 @@ export default struct ChatPage {
   }
 
   /**
-   * @author: system
-   * @description: 我的文档对话框内容构建器
-   * @date: 2026-04-28
+   * @author: wuwenqiang
+   * @description: 我的文档对话框内容构建器（样式与选择文档对话框相同，没有复选框和确定/取消按钮）
+   * @date: 2026-09-19
    */
   @Builder
   myDocumentBuilder() {
     Column() {
-      // 标题栏
+      // 标题栏：左边刷新图标、中间标题、右边创建目录图标和上传图标
       Row() {
-        Blank().width(size.smallIcon).height(size.smallIcon)
+        Image($r("app.media.icon_refresh"))
+          .width(size.smallIcon)
+          .height(size.smallIcon)
+          .opacity(size.opacity)
+          .onClick(() => {
+            // 重新加载文档目录
+            this.loadDocDirectoryList();
+          })
+          .margin({ left: size.middleGap })
         Text('我的文档')
           .fontSize(size.middleFont)
           .fontWeight(FontWeight.Medium)
           .padding(size.middleGap)
           .textAlign(TextAlign.Center)
           .layoutWeight(1)
-        Image($r("app.media.icon_close"))
-          .width(size.middleFont)
-          .height(size.middleFont)
-          .opacity(0.5)
+        Image($r("app.media.icon_create_directory"))
+          .width(size.smallIcon)
+          .height(size.smallIcon)
+          .opacity(size.opacity)
           .onClick(() => {
-            this.myDocDialogController?.close()
+            // 创建目录
+            this.showCreateDirDialog();
           })
-          .margin({ right: size.middleGap })
+        Image($r("app.media.icon_upload"))
+          .width(size.smallIcon)
+          .height(size.smallIcon)
+          .opacity(size.opacity)
+          .onClick(() => {
+            // 上传文档
+            this.showUploadDialog();
+          })
+          .margin({ left: size.middleGap, right: size.middleGap })
       }
       .width("100%")
       .justifyContent(FlexAlign.Center)
@@ -321,57 +342,103 @@ export default struct ChatPage {
         style: { bottom: BorderStyle.Solid }
       })
 
-      // 文档列表内容区
-      if (this.myDocList.length === 0) {
-        Column() {
-          Text("暂无文档")
-            .fontColor(colors.gray)
-            .padding(size.middleGap)
-        }
-        .width('100%')
-        .layoutWeight(1)
-        .justifyContent(FlexAlign.Center)
-      } else {
-        Scroll() {
-          List() {
-            ForEach(this.myDocList, (item: DocumentType, index: number) => {
-              ListItem() {
-                Column({ space: size.miniGap }) {
-                  Text(formatTime(item.createTime))
-                    .fontColor(colors.gray)
-                    .fontSize(12)
-                    .width('100%')
-                  Text(item.name)
-                    .maxLines(2)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    .width('100%')
-                    .fontSize(size.middleFont)
-                }
-                .alignItems(HorizontalAlign.Start)
-                .justifyContent(FlexAlign.Start)
-                .width('100%')
-                .padding({
-                  top: size.middleGap,
-                  bottom: size.middleGap,
-                  left: size.middleGap,
-                  right: size.middleGap
-                })
-              }
-              .swipeAction({
-                end: () => {
-                  return this.DeleteButton(item)
-                }
-              })
-            })
+      // 灰色背景内容区
+      Column({ space: size.middleGap }) {
+        // 目录列表卡片
+        if (this.docDirList.length === 0) {
+          Column() {
+            Text('暂无目录')
+              .fontColor(colors.gray)
+              .padding(size.middleGap)
           }
           .width('100%')
+          .layoutWeight(1)
+          .justifyContent(FlexAlign.Center)
+          .backgroundColor(colors.white)
+          .borderRadius(size.middleBorderRaduis)
+        } else {
+          List() {
+            ForEach(this.docDirList, (directory: DirectoryDocType, index: number) => {
+              ListItem() {
+                Column() {
+                  // 目录条目：目录名称 + 名称右边的展开箭头
+                  Row() {
+                    Text(directory.directoryName)
+                      .fontSize(size.middleFont)
+                      .maxLines(1)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                      .layoutWeight(1)
+                    Image($r("app.media.icon_arrow"))
+                      .width(size.smallIcon)
+                      .height(size.smallIcon)
+                      .opacity(size.opacity)
+                      // 展开时向右的箭头顺时针旋转90度方向向下
+                      .rotate({ angle: directory.expanded ? 90 : 0 })
+                  }
+                  .width('100%')
+                  .padding(size.middleGap)
+                  .onClick(() => {
+                    // 点击目录名称才加载该目录下的文档列表，再次点击则收起
+                    this.toggleDirectory(index);
+                  })
+
+                  // 目录下的文档列表
+                  if (directory.expanded) {
+                    if (directory.docList.length === 0) {
+                      Text('暂无文档')
+                        .fontSize(size.middleFont)
+                        .fontColor(colors.gray)
+                        .padding({
+                          left: size.middleGap,
+                          right: size.middleGap,
+                          top: size.smallGap,
+                          bottom: size.smallGap
+                        })
+                    } else {
+                      ForEach(directory.docList, (doc: DocumentType) => {
+                        Row() {
+                          Text(doc.name)
+                            .fontSize(size.middleFont)
+                            .maxLines(2)
+                            .textOverflow({ overflow: TextOverflow.Ellipsis })
+                            .layoutWeight(1)
+                          // 文档操作图标（三个点）：修改权限、删除
+                          this.docMoreActionBuilder(doc, directory.directoryId)
+                        }
+                        .width('100%')
+                        .padding({
+                          left: size.middleGap,
+                          right: size.middleGap,
+                          top: size.smallGap,
+                          bottom: size.smallGap
+                        })
+                      }, (doc: DocumentType) => `${doc.id}_${doc.permission}`)
+                    }
+                  }
+                }
+                .width('100%')
+                // 每个目录用一条灰色横线隔开
+                .border({
+                  width: { bottom: index === this.docDirList.length - 1 ? 0 : 1 },
+                  color: { bottom: colors.borderColor },
+                  style: { bottom: BorderStyle.Solid }
+                })
+              }
+            }, (directory: DirectoryDocType) => `${directory.directoryId}_${directory.expanded}_${directory.docList.length}`)
+          }
+          .width('100%')
+          .layoutWeight(1)
+          .backgroundColor(colors.white)
+          .borderRadius(size.middleBorderRaduis)
         }
-        .layoutWeight(1)
-        .backgroundColor(colors.white)
       }
+      .layoutWeight(1)
+      .width('100%')
+      .backgroundColor(colors.pageBackground)
+      .padding(size.middleGap)
     }
+    .height("100%")
     .width('100%')
-    .height('100%')
     .backgroundColor(colors.white)
     .borderRadius({ topLeft: size.middleBorderRaduis, topRight: size.middleBorderRaduis })
   }
@@ -841,9 +908,9 @@ export default struct ChatPage {
   }
 
   /**
-   * @author: system
-   * @description: 显示我的文档对话框
-   * @date: 2026-04-28
+   * @author: wuwenqiang
+   * @description: 显示我的文档对话框（先获取文档目录，点击目录才加载该目录下的文档列表）
+   * @date: 2026-09-19
    */
   showMyDocumentDialog = () => {
     const tenantId = this.currentTenant?.id;
@@ -856,27 +923,19 @@ export default struct ChatPage {
       return;
     }
 
-    // 加载我的文档列表
-    getMyDocumentService(tenantId).then((res) => {
-      this.myDocList = res.data;
-      // 打开对话框
-      this.myDocDialogController = new CustomDialogController({
-        customStyle: true,
-        builder: BottomDialogComponent({
-          dialogHeight: '80%',
-          builder: this.myDocumentBuilder.bind(this)
-        }),
-        alignment: DialogAlignment.Bottom,
-      })
-      this.myDocDialogController.open()
-    }).catch((error: Error) => {
-      console.error('获取文档列表失败:', JSON.stringify(error));
-      promptAction.showToast({
-        message: "获取文档列表失败",
-        duration: 2000,
-        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-      });
-    });
+    // 先获取文档目录
+    this.loadDocDirectoryList();
+
+    // 打开对话框
+    this.myDocDialogController = new CustomDialogController({
+      customStyle: true,
+      builder: BottomDialogComponent({
+        dialogHeight: '80%',
+        builder: this.myDocumentBuilder.bind(this)
+      }),
+      alignment: DialogAlignment.Bottom,
+    })
+    this.myDocDialogController.open()
   }
 
   // popup构造器定义弹框内容
@@ -1185,55 +1244,236 @@ export default struct ChatPage {
 
   /**
    * @author: wuwenqiang
-   * @description: 删除弹窗
-   * @date: 2025-04-13 12:07
+   * @description: 文档操作图标（三个点），点击弹出修改权限和删除选项
+   * @date: 2026-09-19
    */
   @Builder
-  DeleteButton(docItem: DocumentType) {
-    Column() {
-      Text('删除')
-        .fontColor(Color.White)
-        .fontSize(16)
+  docMoreActionBuilder(doc: DocumentType, directoryId: string) {
+    Row({ space: size.miniGap }) {
+      Circle({ width: size.miniGap, height: size.miniGap })
+        .fill(colors.gray)
+      Circle({ width: size.miniGap, height: size.miniGap })
+        .fill(colors.gray)
+      Circle({ width: size.miniGap, height: size.miniGap })
+        .fill(colors.gray)
     }
+    .width(size.middleIcon)
+    .height(size.middleIcon)
     .justifyContent(FlexAlign.Center)
-    .width(80)
-    .height('100%')
-    .backgroundColor(colors.warn)
-    .onClick(() => {
-      this.dialogController = new CustomDialogController({
-        customStyle: false,
-        builder: DialogComponent({
-          title: `是否删除文档：${docItem.name}`,
-          cancel: () => {
-            this.dialogController?.close();
-          },
-          confirm: () => {
-            deleteMyDocumentService(docItem.id).then((res) => {
-              promptAction.showToast({
-                message: "删除文档成功",
-                duration: 2000,
-                bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-              })
-              // 刷新文档列表
-              const tenantId = this.currentTenant?.id;
-              if (tenantId) {
-                getMyDocumentService(tenantId).then((res) => {
-                  this.myDocList = res.data;
-                });
-              }
-              this.dialogController?.close()
-            }).catch(() => {
-              promptAction.showToast({
-                message: "删除文档失败",
-                duration: 2000,
-                bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-              })
-            })
-          },
-        }),
-        alignment: DialogAlignment.Center,
-      })
-      this.dialogController.open()
+    .alignItems(VerticalAlign.Center)
+    .bindMenu([
+      {
+        value: '修改权限',
+        action: () => {
+          this.showUpdateDocPermissionDialog(doc, directoryId);
+        }
+      },
+      {
+        value: '删除',
+        action: () => {
+          this.confirmDeleteDoc(doc, directoryId);
+        }
+      }
+    ])
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 显示修改文档权限对话框，权限下拉框默认回显该文档当前的权限
+   * @date: 2026-09-19
+   */
+  showUpdateDocPermissionDialog = (doc: DocumentType, directoryId: string): void => {
+    this.currentDocId = doc.id;
+    this.currentDocDirectoryId = directoryId;
+    // 用文档条目中的 permission 字段回显权限下拉框
+    const permissionIndex: number = DOC_PERMISSION_OPTIONS.findIndex((item: SelectOptionType) => item.value === doc.permission);
+    this.docPermissionIndex = permissionIndex > -1 ? permissionIndex : 0;
+    this.updatePermissionDialogController = new CustomDialogController({
+      customStyle: true,
+      builder: this.updatePermissionDialogBuilder.bind(this),
+      alignment: DialogAlignment.Center,
+    })
+    this.updatePermissionDialogController.open()
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 修改文档权限
+   * @date: 2026-09-19
+   */
+  updateDocPermission = (): void => {
+    const permission: string = DOC_PERMISSION_OPTIONS[this.docPermissionIndex].value;
+    updateDocPermissionService(this.currentDocId, permission).then((res) => {
+      if (res.data > 0) {
+        // 成功提示后端返回的 msg
+        promptAction.showToast({
+          message: res.msg || '修改成功',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+        this.updatePermissionDialogController?.close();
+        // 刷新该目录下的文档列表，重新回显最新权限
+        this.refreshDocDirectory(this.currentDocDirectoryId);
+      } else {
+        promptAction.showToast({
+          message: res.msg || '修改失败',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+      }
+    }).catch((err: Error) => {
+      // 失败时后端返回的 msg 由 httpRequest 统一提示
+      console.error('[ChatPage] 修改文档权限失败:', JSON.stringify(err));
+    })
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 删除文档确认弹窗
+   * @date: 2026-09-19
+   */
+  confirmDeleteDoc = (doc: DocumentType, directoryId: string): void => {
+    this.currentDocId = doc.id;
+    this.currentDocDirectoryId = directoryId;
+    this.deleteDocDialogController = new CustomDialogController({
+      customStyle: false,
+      builder: DialogComponent({
+        title: '是否确认删除',
+        cancel: (): void => {
+          this.deleteDocDialogController?.close();
+        },
+        confirm: (): void => {
+          this.doDeleteDoc();
+        }
+      }),
+      alignment: DialogAlignment.Center,
+    })
+    this.deleteDocDialogController.open()
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 删除文档，并从当前目录的文档列表中移除
+   * @date: 2026-09-19
+   */
+  doDeleteDoc = (): void => {
+    deleteMyDocumentService(this.currentDocId).then((res) => {
+      if (res.data > 0) {
+        // 成功提示后端返回的 msg
+        promptAction.showToast({
+          message: res.msg || '删除成功',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+        // 从所属目录的文档列表中移除该条文档
+        const directoryIndex: number = this.docDirList.findIndex((item: DirectoryDocType) => item.directoryId === this.currentDocDirectoryId);
+        if (directoryIndex > -1) {
+          const directory: DirectoryDocType = this.docDirList[directoryIndex];
+          const removedDirectory: DirectoryDocType = {
+            directoryId: directory.directoryId,
+            directoryName: directory.directoryName,
+            expanded: directory.expanded,
+            docList: directory.docList.filter((item: DocumentType) => item.id !== this.currentDocId)
+          };
+          this.docDirList.splice(directoryIndex, 1, removedDirectory);
+        }
+        // 被删除的文档如果已被勾选，同步清理勾选状态
+        this.checkedDocIds = this.checkedDocIds.filter((item: string) => item !== this.currentDocId);
+      } else {
+        promptAction.showToast({
+          message: res.msg || '删除失败',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+      }
+      this.deleteDocDialogController?.close();
+    }).catch((err: Error) => {
+      // 失败时后端返回的 msg 由 httpRequest 统一提示
+      console.error('[ChatPage] 删除文档失败:', JSON.stringify(err));
+      this.deleteDocDialogController?.close();
+    })
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 刷新指定目录下的文档列表
+   * @date: 2026-09-19
+   */
+  refreshDocDirectory = (directoryId: string): void => {
+    const index: number = this.docDirList.findIndex((item: DirectoryDocType) => item.directoryId === directoryId);
+    if (index > -1) {
+      this.loadDirectoryDocList(index);
+    }
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 修改文档权限对话框内容构建器
+   * @date: 2026-09-19
+   */
+  @Builder
+  updatePermissionDialogBuilder() {
+    Column({ space: size.middleGap }) {
+      Text('修改权限')
+        .fontSize(size.bigFont)
+        .fontWeight(FontWeight.Medium)
+        .margin({ top: size.middleGap })
+
+      // 文档权限下拉框，选项来自 DOC_PERMISSION_OPTIONS
+      Row({ space: size.smallGap }) {
+        Text('权限')
+          .fontSize(size.middleFont)
+          .width('25%')
+        Select(PERMISSION_SELECT_OPTIONS)
+          .selected(this.docPermissionIndex)
+          .value(DOC_PERMISSION_OPTIONS[this.docPermissionIndex].label)
+          .font({ size: size.middleFont })
+          .optionFont({ size: size.middleFont })
+          .layoutWeight(1)
+          .onSelect((index: number) => {
+            this.docPermissionIndex = index;
+          })
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
+
+      // 取消/确定按钮
+      Row({ space: size.middleGap }) {
+        Text('取消')
+          .width('45%')
+          .height(size.btnHeight)
+          .textAlign(TextAlign.Center)
+          .fontColor(colors.gray)
+          .border({
+            width: 1,
+            color: colors.gray,
+            style: BorderStyle.Solid
+          })
+          .borderRadius(size.btnHeight / 2)
+          .onClick(() => {
+            this.updatePermissionDialogController?.close();
+          })
+
+        Text('确定')
+          .width('45%')
+          .height(size.btnHeight)
+          .textAlign(TextAlign.Center)
+          .fontColor(Color.White)
+          .backgroundColor(colors.primary)
+          .borderRadius(size.btnHeight / 2)
+          .onClick(() => {
+            this.updateDocPermission();
+          })
+      }
+      .width('100%')
+      .margin({ bottom: size.middleGap })
+    }
+    .width('90%')
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+    .padding({
+      left: size.middleGap,
+      right: size.middleGap
     })
   }
 
