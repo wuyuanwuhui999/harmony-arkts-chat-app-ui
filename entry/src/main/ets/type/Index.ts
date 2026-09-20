@@ -459,5 +459,6 @@ export interface SelectOptionType {
  * @author wuwenqiang
  */
 export interface UpdateDocPermissionParamsType {
+  docId: string; // 文档id
   permission: string; // 文档权限：private-私密、tenant-租户内公开、company-公司内公开
 }

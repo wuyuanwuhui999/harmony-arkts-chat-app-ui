@@ -21,7 +21,7 @@ export default {
   uploadDoc: "/service/chat/uploadDoc",// 上传文档（租户、目录等参数放在请求体中）
   getDocList: "/service/chat/getDocList",// 查询我的文档
   deleteDoc: "/service/chat/deleteDoc/",// 删除我的文档
-  updateDocPermission: "/service/chat/updateDocPermission/",// 修改文档权限
+  updateDocPermission: "/service/chat/updateDocPermission",// 修改文档权限（docId 放在请求体中）
   getDirectoryList: "/service/chat/getDirectoryList",// 查询目录列表
   getDocListByDirId: "/service/chat/getDocListByDirId",// 查询目录下的文档列表
   createDir: "/service/chat/createDir",// 创建目录
