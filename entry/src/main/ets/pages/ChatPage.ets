@@ -1293,13 +1293,23 @@ export default struct ChatPage {
     // 记录该文档当前的权限，接口失败时用于回滚
     this.currentDocPermission = currentPermission;
     const permissionIndex: number = DOC_PERMISSION_OPTIONS.findIndex((item: SelectOptionType) => item.value === currentPermission);
+    // 先同步更新 @State，保证对话框打开时 Select 能读到最新值
     this.docPermissionIndex = permissionIndex > -1 ? permissionIndex : 0;
-    this.updatePermissionDialogController = new CustomDialogController({
-      customStyle: true,
-      builder: this.updatePermissionDialogBuilder.bind(this),
-      alignment: DialogAlignment.Center,
-    })
-    this.updatePermissionDialogController.open()
+    console.log('[ChatPage] 打开修改权限对话框 docId:', doc.id,
+      ' 数据库permission:', doc.permission,
+      ' 本地覆盖:', this.docPermissionOverrides.get(doc.id),
+      ' 最终permission:', currentPermission,
+      ' 索引:', this.docPermissionIndex);
+
+    // 延迟一帧打开对话框，确保 @State 更新已应用到 UI 树，避免 Select 回显第一项
+    setTimeout(() => {
+      this.updatePermissionDialogController = new CustomDialogController({
+        customStyle: true,
+        builder: this.updatePermissionDialogBuilder.bind(this),
+        alignment: DialogAlignment.Center,
+      })
+      this.updatePermissionDialogController.open()
+    }, 0);
   }
 
   /**
@@ -1317,9 +1327,6 @@ export default struct ChatPage {
     this.updatePermissionDialogController?.close();
     this.updatePermissionDialogController = null;
 
-    // 2.先按所选权限更新列表，保证再次打开修改权限对话框时回显的是最新权限
-    this.applyDocPermission(docId, directoryId, permission);
-
     // 3.调用修改接口，成功/失败都提示后端返回的 msg
     updateDocPermissionService(docId, permission).then((res) => {
       if (res.data > 0) {
@@ -1328,6 +1335,7 @@ export default struct ChatPage {
           duration: 2000,
           bottom: px2vp(display.getDefaultDisplaySync().height) / 2
         });
+        this.applyDocPermission(docId, directoryId, permission);
       } else {
         // 接口返回失败时提示后端 msg 并回滚本地权限
         promptAction.showToast({
@@ -1593,10 +1601,6 @@ export default struct ChatPage {
       // 回显已经勾选过的文档，并用本地权限覆盖修正回显的权限
       docList.forEach((item: DocumentType) => {
         item.checked = this.checkedDocIds.includes(item.id);
-        const permission: string | undefined = this.docPermissionOverrides.get(item.id);
-        if (permission) {
-          item.permission = permission;
-        }
       });
       const expandedDirectory: DirectoryDocType = {
         directoryId: directory.directoryId,

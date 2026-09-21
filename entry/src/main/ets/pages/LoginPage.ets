@@ -25,7 +25,7 @@ struct LoginPage {
   private loadingController: LoadingController = new LoadingController()
 
   async aboutToAppear() {
-    this.userAccount = this.userData?.userAccount || "吴怨吴悔";
+    this.userAccount = this.userData?.userAccount || "吴时吴刻";
     this.password = await preference.getPassword(this.userData?.userAccount!) as string || "123456";
   }
 
