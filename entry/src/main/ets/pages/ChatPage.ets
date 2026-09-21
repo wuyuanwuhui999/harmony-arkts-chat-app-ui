@@ -102,6 +102,7 @@ export default struct ChatPage {
   @State docPermissionIndex: number = 0; // 修改文档权限下拉选中项
   private currentDocId: string = ''; // 当前操作的文档id
   private currentDocDirectoryId: string = ''; // 当前文档所在的目录id
+  private currentDocPermission: string = ''; // 打开修改权限对话框时该文档的权限（失败回滚用）
   private updatePermissionDialogController: CustomDialogController | null = null;
   private deleteDocDialogController: CustomDialogController | null = null;
   private message: string = "";
@@ -1286,6 +1287,8 @@ export default struct ChatPage {
   showUpdateDocPermissionDialog = (doc: DocumentType, directoryId: string): void => {
     this.currentDocId = doc.id;
     this.currentDocDirectoryId = directoryId;
+    // 记录该文档当前的权限，接口失败时用于回滚
+    this.currentDocPermission = doc.permission ? doc.permission : '';
     // 用文档条目中的 permission 字段回显权限下拉框
     const permissionIndex: number = DOC_PERMISSION_OPTIONS.findIndex((item: SelectOptionType) => item.value === doc.permission);
     this.docPermissionIndex = permissionIndex > -1 ? permissionIndex : 0;
@@ -1299,51 +1302,49 @@ export default struct ChatPage {
 
   /**
    * @author: wuwenqiang
-   * @description: 修改文档权限
+   * @description: 修改权限对话框点击确定：先同步关闭对话框并本地回显最新权限，再调用接口，失败时回滚
    * @date: 2026-09-19
    */
-  updateDocPermission = (): void => {
+  confirmUpdateDocPermission = (): void => {
     const docId: string = this.currentDocId;
     const directoryId: string = this.currentDocDirectoryId;
     const permission: string = DOC_PERMISSION_OPTIONS[this.docPermissionIndex].value;
+    const oldPermission: string = this.currentDocPermission;
+
+    // 1.在点击事件里同步关闭对话框（在接口回调里关闭可能不生效，导致对话框关不掉）
+    this.updatePermissionDialogController?.close();
+    this.updatePermissionDialogController = null;
+
+    // 2.先按所选权限更新列表，保证再次打开修改权限对话框时回显的是最新权限
+    this.updateDocPermissionInList(directoryId, docId, permission);
+
+    // 3.调用修改接口，成功/失败都提示后端返回的 msg
     updateDocPermissionService(docId, permission).then((res) => {
-      this.handleUpdateDocPermissionResult(res, docId, directoryId, permission);
-    }).catch((err: MyAwesomeData<number>) => {
-      // status 不为 SUCCESS 时 httpRequest 会 reject 并提示后端 msg，
-      // 但本接口以后端返回的 data 大于0作为修改成功的依据，所以这里同样按 data 判断，
-      // 否则会出现“提示成功但对话框关不掉、权限不回显”的问题
-      if (err && err.data > 0) {
-        this.handleUpdateDocPermissionResult(err, docId, directoryId, permission);
+      if (res.data > 0) {
+        promptAction.showToast({
+          message: res.msg || '修改成功',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
       } else {
+        // 接口返回失败时提示后端 msg 并回滚本地权限
+        promptAction.showToast({
+          message: res.msg || '修改失败',
+          duration: 2000,
+          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+        });
+        this.updateDocPermissionInList(directoryId, docId, oldPermission);
+      }
+    }).catch((err: MyAwesomeData<number>) => {
+      // status 不为 SUCCESS 时 httpRequest 会 reject 并已提示后端 msg，
+      // 只有明确拿到“失败”的 data（非空且不大于0）时才回滚，避免后端返回体差异把成功的修改误判为失败
+      if (err && err.data !== undefined && err.data !== null && !(err.data > 0)) {
         console.error('[ChatPage] 修改文档权限失败:', JSON.stringify(err));
+        this.updateDocPermissionInList(directoryId, docId, oldPermission);
+      } else {
+        console.warn('[ChatPage] 修改文档权限未拿到明确的失败结果，保留本地已选权限:', JSON.stringify(err));
       }
     })
-  }
-
-  /**
-   * @author: wuwenqiang
-   * @description: 处理修改文档权限的结果：成功则关闭对话框、提示后端msg，并同步列表中的权限
-   * @date: 2026-09-19
-   */
-  handleUpdateDocPermissionResult = (res: MyAwesomeData<number>, docId: string, directoryId: string, permission: string): void => {
-    if (res.data > 0) {
-      // 先关闭对话框再提示，避免提示异常导致对话框无法关闭
-      this.updatePermissionDialogController?.close();
-      this.updatePermissionDialogController = null;
-      promptAction.showToast({
-        message: res.msg || '修改成功',
-        duration: 2000,
-        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-      });
-      // 同步列表中该文档的权限，保证再次打开修改权限对话框时回显最新权限
-      this.updateDocPermissionInList(directoryId, docId, permission);
-    } else {
-      promptAction.showToast({
-        message: res.msg || '修改失败',
-        duration: 2000,
-        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-      });
-    }
   }
 
   /**
@@ -1495,7 +1496,7 @@ export default struct ChatPage {
           .backgroundColor(colors.primary)
           .borderRadius(size.btnHeight / 2)
           .onClick(() => {
-            this.updateDocPermission();
+            this.confirmUpdateDocPermission();
           })
       }
       .width('100%')
