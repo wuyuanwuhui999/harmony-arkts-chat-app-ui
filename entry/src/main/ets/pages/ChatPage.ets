@@ -103,6 +103,7 @@ export default struct ChatPage {
   private currentDocId: string = ''; // 当前操作的文档id
   private currentDocDirectoryId: string = ''; // 当前文档所在的目录id
   private currentDocPermission: string = ''; // 打开修改权限对话框时该文档的权限（失败回滚用）
+  private docPermissionOverrides: Map<string, string> = new Map<string, string>(); // 文档权限本地覆盖（修改成功后记录，目录文档列表重新拉取时也回显最新权限）
   private updatePermissionDialogController: CustomDialogController | null = null;
   private deleteDocDialogController: CustomDialogController | null = null;
   private message: string = "";
@@ -1287,10 +1288,11 @@ export default struct ChatPage {
   showUpdateDocPermissionDialog = (doc: DocumentType, directoryId: string): void => {
     this.currentDocId = doc.id;
     this.currentDocDirectoryId = directoryId;
+    // 本地覆盖的权限优先（接口成功后记录），否则用文档条目中的 permission 字段回显
+    const currentPermission: string = this.docPermissionOverrides.get(doc.id) || (doc.permission ? doc.permission : '');
     // 记录该文档当前的权限，接口失败时用于回滚
-    this.currentDocPermission = doc.permission ? doc.permission : '';
-    // 用文档条目中的 permission 字段回显权限下拉框
-    const permissionIndex: number = DOC_PERMISSION_OPTIONS.findIndex((item: SelectOptionType) => item.value === doc.permission);
+    this.currentDocPermission = currentPermission;
+    const permissionIndex: number = DOC_PERMISSION_OPTIONS.findIndex((item: SelectOptionType) => item.value === currentPermission);
     this.docPermissionIndex = permissionIndex > -1 ? permissionIndex : 0;
     this.updatePermissionDialogController = new CustomDialogController({
       customStyle: true,
@@ -1316,7 +1318,7 @@ export default struct ChatPage {
     this.updatePermissionDialogController = null;
 
     // 2.先按所选权限更新列表，保证再次打开修改权限对话框时回显的是最新权限
-    this.updateDocPermissionInList(directoryId, docId, permission);
+    this.applyDocPermission(docId, directoryId, permission);
 
     // 3.调用修改接口，成功/失败都提示后端返回的 msg
     updateDocPermissionService(docId, permission).then((res) => {
@@ -1333,14 +1335,14 @@ export default struct ChatPage {
           duration: 2000,
           bottom: px2vp(display.getDefaultDisplaySync().height) / 2
         });
-        this.updateDocPermissionInList(directoryId, docId, oldPermission);
+        this.applyDocPermission(docId, directoryId, oldPermission);
       }
     }).catch((err: MyAwesomeData<number>) => {
       // status 不为 SUCCESS 时 httpRequest 会 reject 并已提示后端 msg，
       // 只有明确拿到“失败”的 data（非空且不大于0）时才回滚，避免后端返回体差异把成功的修改误判为失败
       if (err && err.data !== undefined && err.data !== null && !(err.data > 0)) {
         console.error('[ChatPage] 修改文档权限失败:', JSON.stringify(err));
-        this.updateDocPermissionInList(directoryId, docId, oldPermission);
+        this.applyDocPermission(docId, directoryId, oldPermission);
       } else {
         console.warn('[ChatPage] 修改文档权限未拿到明确的失败结果，保留本地已选权限:', JSON.stringify(err));
       }
@@ -1349,10 +1351,16 @@ export default struct ChatPage {
 
   /**
    * @author: wuwenqiang
-   * @description: 同步文档在目录列表中的权限（替换数组元素触发列表刷新）
+   * @description: 应用文档权限：记录本地权限覆盖并同步到文档列表，保证列表重新拉取后回显的仍是最新权限
    * @date: 2026-09-19
    */
-  updateDocPermissionInList = (directoryId: string, docId: string, permission: string): void => {
+  applyDocPermission = (docId: string, directoryId: string, permission: string): void => {
+    // 记录/清除本地覆盖，接口重新拉取目录下文档列表时以它为准
+    if (permission) {
+      this.docPermissionOverrides.set(docId, permission);
+    } else {
+      this.docPermissionOverrides.delete(docId);
+    }
     const directoryIndex: number = this.docDirList.findIndex((item: DirectoryDocType) => item.directoryId === directoryId);
     if (directoryIndex < 0) {
       return;
@@ -1582,9 +1590,13 @@ export default struct ChatPage {
     }
     getDocListByDirIdService(tenantId, directory.directoryId).then((res) => {
       const docList: DocumentType[] = res.data || [];
-      // 回显已经勾选过的文档
+      // 回显已经勾选过的文档，并用本地权限覆盖修正回显的权限
       docList.forEach((item: DocumentType) => {
         item.checked = this.checkedDocIds.includes(item.id);
+        const permission: string | undefined = this.docPermissionOverrides.get(item.id);
+        if (permission) {
+          item.permission = permission;
+        }
       });
       const expandedDirectory: DirectoryDocType = {
         directoryId: directory.directoryId,
