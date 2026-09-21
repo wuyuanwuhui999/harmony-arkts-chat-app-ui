@@ -18,6 +18,7 @@ import {
   UploadFileType,
   UploadDocParamsType,
   SelectOptionType,
+  MyAwesomeData,
   PromptInterface,
   GetPromptListParamsType,
   CompanyType
@@ -352,7 +353,6 @@ export default struct ChatPage {
               .padding(size.middleGap)
           }
           .width('100%')
-          .layoutWeight(1)
           .justifyContent(FlexAlign.Center)
           .backgroundColor(colors.white)
           .borderRadius(size.middleBorderRaduis)
@@ -427,7 +427,8 @@ export default struct ChatPage {
             }, (directory: DirectoryDocType) => `${directory.directoryId}_${directory.expanded}_${directory.docList.length}`)
           }
           .width('100%')
-          .layoutWeight(1)
+          // 目录列表卡片高度自适应内容，最多占满内容区
+          .constraintSize({ maxHeight: '100%' })
           .backgroundColor(colors.white)
           .borderRadius(size.middleBorderRaduis)
         }
@@ -1302,29 +1303,73 @@ export default struct ChatPage {
    * @date: 2026-09-19
    */
   updateDocPermission = (): void => {
+    const docId: string = this.currentDocId;
+    const directoryId: string = this.currentDocDirectoryId;
     const permission: string = DOC_PERMISSION_OPTIONS[this.docPermissionIndex].value;
-    updateDocPermissionService(this.currentDocId, permission).then((res) => {
-      if (res.data > 0) {
-        // 成功提示后端返回的 msg
-        promptAction.showToast({
-          message: res.msg || '修改成功',
-          duration: 2000,
-          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-        });
-        this.updatePermissionDialogController?.close();
-        // 刷新该目录下的文档列表，重新回显最新权限
-        this.refreshDocDirectory(this.currentDocDirectoryId);
+    updateDocPermissionService(docId, permission).then((res) => {
+      this.handleUpdateDocPermissionResult(res, docId, directoryId, permission);
+    }).catch((err: MyAwesomeData<number>) => {
+      // status 不为 SUCCESS 时 httpRequest 会 reject 并提示后端 msg，
+      // 但本接口以后端返回的 data 大于0作为修改成功的依据，所以这里同样按 data 判断，
+      // 否则会出现“提示成功但对话框关不掉、权限不回显”的问题
+      if (err && err.data > 0) {
+        this.handleUpdateDocPermissionResult(err, docId, directoryId, permission);
       } else {
-        promptAction.showToast({
-          message: res.msg || '修改失败',
-          duration: 2000,
-          bottom: px2vp(display.getDefaultDisplaySync().height) / 2
-        });
+        console.error('[ChatPage] 修改文档权限失败:', JSON.stringify(err));
       }
-    }).catch((err: Error) => {
-      // 失败时后端返回的 msg 由 httpRequest 统一提示
-      console.error('[ChatPage] 修改文档权限失败:', JSON.stringify(err));
     })
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 处理修改文档权限的结果：成功则关闭对话框、提示后端msg，并同步列表中的权限
+   * @date: 2026-09-19
+   */
+  handleUpdateDocPermissionResult = (res: MyAwesomeData<number>, docId: string, directoryId: string, permission: string): void => {
+    if (res.data > 0) {
+      // 先关闭对话框再提示，避免提示异常导致对话框无法关闭
+      this.updatePermissionDialogController?.close();
+      this.updatePermissionDialogController = null;
+      promptAction.showToast({
+        message: res.msg || '修改成功',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+      // 同步列表中该文档的权限，保证再次打开修改权限对话框时回显最新权限
+      this.updateDocPermissionInList(directoryId, docId, permission);
+    } else {
+      promptAction.showToast({
+        message: res.msg || '修改失败',
+        duration: 2000,
+        bottom: px2vp(display.getDefaultDisplaySync().height) / 2
+      });
+    }
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 同步文档在目录列表中的权限（替换数组元素触发列表刷新）
+   * @date: 2026-09-19
+   */
+  updateDocPermissionInList = (directoryId: string, docId: string, permission: string): void => {
+    const directoryIndex: number = this.docDirList.findIndex((item: DirectoryDocType) => item.directoryId === directoryId);
+    if (directoryIndex < 0) {
+      return;
+    }
+    const directory: DirectoryDocType = this.docDirList[directoryIndex];
+    const docIndex: number = directory.docList.findIndex((item: DocumentType) => item.id === docId);
+    if (docIndex < 0) {
+      return;
+    }
+    // ArkUI 只观察 @State 的第一层，修改字段后需要替换数组元素才能触发列表刷新
+    directory.docList[docIndex].permission = permission;
+    const updatedDirectory: DirectoryDocType = {
+      directoryId: directory.directoryId,
+      directoryName: directory.directoryName,
+      expanded: directory.expanded,
+      docList: directory.docList.slice()
+    };
+    this.docDirList.splice(directoryIndex, 1, updatedDirectory);
   }
 
   /**
@@ -1392,18 +1437,6 @@ export default struct ChatPage {
       console.error('[ChatPage] 删除文档失败:', JSON.stringify(err));
       this.deleteDocDialogController?.close();
     })
-  }
-
-  /**
-   * @author: wuwenqiang
-   * @description: 刷新指定目录下的文档列表
-   * @date: 2026-09-19
-   */
-  refreshDocDirectory = (directoryId: string): void => {
-    const index: number = this.docDirList.findIndex((item: DirectoryDocType) => item.directoryId === directoryId);
-    if (index > -1) {
-      this.loadDirectoryDocList(index);
-    }
   }
 
   /**
