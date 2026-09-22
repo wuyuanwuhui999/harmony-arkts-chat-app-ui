@@ -1827,6 +1827,7 @@ export default struct ChatPage {
     }
     const params: UploadDocParamsType = {
       tenantId: tenantId,
+      companyId: this.companyData?.id || '', // 公司id
       directoryId: this.uploadDirectoryId,
       permission: DOC_PERMISSION_OPTIONS[this.permissionIndex].value,
       splitMethod: splitMethod,

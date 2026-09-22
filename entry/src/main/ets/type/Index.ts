@@ -427,6 +427,7 @@ export interface UploadFileType {
  */
 export interface UploadDocParamsType {
   tenantId: string; // 租户id
+  companyId: string; // 公司id
   directoryId: string; // 目录id
   permission: string; // 文档权限：private-私密、tenant-租户内公开、company-公司内公开
   splitMethod: string; // 分割模式：recursive/paragraph/sentence/fixed
