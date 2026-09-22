@@ -2206,6 +2206,9 @@ export default struct ChatPage {
           }
         }
 
+        // 占满卡片下方的剩余空间，让取消/确定按钮贴在弹窗底部
+        Blank()
+
         // 取消/确定按钮
         Row({ space: size.middleGap }) {
           Text('取消')
