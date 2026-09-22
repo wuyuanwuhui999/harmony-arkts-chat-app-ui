@@ -24,6 +24,7 @@ export default {
   updateDocPermission: "/service/chat/updateDocPermission",// 修改文档权限（docId 放在请求体中）
   getDirectoryList: "/service/chat/getDirectoryList",// 查询目录列表
   getDocListByDirId: "/service/chat/getDocListByDirId",// 查询目录下的文档列表
+  getPublicDocList: "/service/chat/getPublicDocList",// 查询公共文档（返回全部文档，文档带目录名称）
   createDir: "/service/chat/createDir",// 创建目录
   renameDir: "/service/chat/renameDir",// 重命名目录
   deleteDir: "/service/chat/deleteDir/",// 删除目录

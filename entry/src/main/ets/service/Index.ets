@@ -206,6 +206,15 @@ export const getDocListByDirIdService = (tenantId: string, directoryId: string):
 }
 
 /**
+ * @description: 查询公共文档（一次返回全部文档，文档中带有 directoryName 目录名称，前端按目录名称分组）
+ * @date: 2026-09-21
+ * @author wuwenqiang
+ */
+export const getPublicDocListService = (tenantId: string, companyId: string):Promise<types.MyAwesomeData<types.DocumentType[]>> => {
+  return httpRequest.get<types.DocumentType[]>(`${api.getPublicDocList}?tenantId=${tenantId}&companyId=${companyId}`);
+}
+
+/**
  * @description: 创建目录
  * @date: 2026-09-19
  * @author wuwenqiang

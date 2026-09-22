@@ -29,6 +29,7 @@ import {
   deleteMyDocumentService,
   getDirectoryListService,
   getDocListByDirIdService,
+  getPublicDocListService,
   createDirectoryService,
   updateDocPermissionService,
   uploadDocService,
@@ -87,6 +88,8 @@ export default struct ChatPage {
   @StorageLink(USER_DATA) userData: UserDataType = {} as UserDataType;
   @State checkedDocIds: string[] = [];
   @State docDirList: Array<DirectoryDocType> = []; // 选择文档对话框的目录及目录下的文档列表
+  @State docTabIndex: number = 0; // 选择文档对话框页签：0-我的文档、1-公共文档
+  @State publicDocDirList: Array<DirectoryDocType> = []; // 公共文档按 directoryName 分组后的目录及文档列表
   @State uploadDirectoryId: string = ''; // 上传文档对话框选中的目录id
   @State newDirectoryName: string = ''; // 创建目录输入的名称
   private docDialogController: CustomDialogController | null = null;
@@ -1545,6 +1548,8 @@ export default struct ChatPage {
 
     // 记录进入对话框时的已选文档，取消时回滚
     this.snapshotCheckedDocIds = this.checkedDocIds.slice();
+    // 每次打开默认展示我的文档页签
+    this.docTabIndex = 0;
     // 重新加载文档目录
     this.loadDocDirectoryList();
 
@@ -1636,6 +1641,98 @@ export default struct ChatPage {
     } else {
       this.loadDirectoryDocList(index);
     }
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 切换选择文档对话框的页签，切到公共文档时加载公共文档列表
+   * @date: 2026-09-21
+   */
+  switchDocTab = (index: number): void => {
+    if (this.docTabIndex === index) {
+      return;
+    }
+    this.docTabIndex = index;
+    if (index === 1) {
+      this.loadPublicDocList();
+    }
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 刷新当前页签的内容
+   * @date: 2026-09-21
+   */
+  refreshDocTab = (): void => {
+    if (this.docTabIndex === 0) {
+      this.loadDocDirectoryList();
+    } else {
+      this.loadPublicDocList();
+    }
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 加载公共文档列表，并按 directoryName 分组为目录卡片（文档已全部返回，展开时不再请求接口）
+   * @date: 2026-09-21
+   */
+  loadPublicDocList = (): void => {
+    const tenantId = this.currentTenant?.id;
+    const companyId: string = this.companyData?.id || '';
+    if (!tenantId) {
+      console.warn('[ChatPage] 获取公共文档失败：租户ID为空');
+      return;
+    }
+    getPublicDocListService(tenantId, companyId).then((res) => {
+      this.publicDocDirList = this.groupDocByDirectoryName(res.data || []);
+    }).catch((err: Error) => {
+      console.error('[ChatPage] 获取公共文档失败:', JSON.stringify(err));
+    })
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 按文档的 directoryName 把文档分组为目录卡片，目录默认收起
+   * @date: 2026-09-21
+   */
+  groupDocByDirectoryName = (docList: DocumentType[]): Array<DirectoryDocType> => {
+    const directoryList: Array<DirectoryDocType> = [];
+    docList.forEach((item: DocumentType) => {
+      // 回显已经勾选过的文档
+      item.checked = this.checkedDocIds.includes(item.id);
+      const directoryName: string = item.directoryName || '';
+      const index: number = directoryList.findIndex((directory: DirectoryDocType) => directory.directoryName === directoryName);
+      if (index > -1) {
+        directoryList[index].docList.push(item);
+      } else {
+        directoryList.push({
+          directoryId: item.directoryId ? item.directoryId : directoryName,
+          directoryName: directoryName,
+          expanded: false,
+          docList: [item]
+        });
+      }
+    });
+    return directoryList;
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 公共文档目录展开/收起，直接使用已加载的文档列表，不再请求接口
+   * @date: 2026-09-21
+   */
+  togglePublicDirectory = (index: number): void => {
+    const directory: DirectoryDocType = this.publicDocDirList[index];
+    if (!directory) {
+      return;
+    }
+    const toggledDirectory: DirectoryDocType = {
+      directoryId: directory.directoryId,
+      directoryName: directory.directoryName,
+      expanded: !directory.expanded,
+      docList: directory.docList
+    };
+    this.publicDocDirList.splice(index, 1, toggledDirectory);
   }
 
   /**
@@ -1985,23 +2082,41 @@ export default struct ChatPage {
   @Builder
   docSelectDialogBuilder() {
     Column() {
-      // 标题栏：左边刷新图标、中间标题、右边创建目录图标和上传图标
+      // 标题栏：左边刷新图标、中间我的文档/公共文档页签、右边创建目录图标和上传图标
       Row() {
         Image($r("app.media.icon_refresh"))
           .width(size.smallIcon)
           .height(size.smallIcon)
           .opacity(size.opacity)
           .onClick(() => {
-            // 重新加载文档目录
-            this.loadDocDirectoryList();
+            // 重新加载当前页签的内容
+            this.refreshDocTab();
           })
           .margin({ left: size.middleGap })
-        Text('选择文档')
-          .fontSize(size.middleFont)
-          .fontWeight(FontWeight.Medium)
-          .padding(size.middleGap)
-          .textAlign(TextAlign.Center)
-          .layoutWeight(1)
+
+        // 我的文档和公共文档两个页签，默认我的文档为激活状态
+        Row({ space: size.middleGap }) {
+          Text('我的文档')
+            .fontSize(size.middleFont)
+            .fontWeight(this.docTabIndex === 0 ? FontWeight.Medium : FontWeight.Normal)
+            .fontColor(this.docTabIndex === 0 ? colors.primary : colors.black)
+            .padding({ top: size.middleGap, bottom: size.middleGap })
+            .onClick(() => {
+              this.switchDocTab(0);
+            })
+          Text('公共文档')
+            .fontSize(size.middleFont)
+            .fontWeight(this.docTabIndex === 1 ? FontWeight.Medium : FontWeight.Normal)
+            .fontColor(this.docTabIndex === 1 ? colors.primary : colors.black)
+            .padding({ top: size.middleGap, bottom: size.middleGap })
+            .onClick(() => {
+              this.switchDocTab(1);
+            })
+        }
+        .layoutWeight(1)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(VerticalAlign.Center)
+
         Image($r("app.media.icon_create_directory"))
           .width(size.smallIcon)
           .height(size.smallIcon)
@@ -2030,85 +2145,20 @@ export default struct ChatPage {
 
       // 灰色背景内容区
       Column({ space: size.middleGap }) {
-        // 目录列表卡片
-        if (this.docDirList.length === 0) {
-          Column() {
-            Text('暂无目录')
-              .fontColor(colors.gray)
-              .padding(size.middleGap)
+        // 我的文档页签：目录列表卡片（点击目录才加载该目录下的文档）
+        if (this.docTabIndex === 0) {
+          if (this.docDirList.length === 0) {
+            this.docEmptyCardBuilder('暂无目录')
+          } else {
+            this.myDocSelectListBuilder()
           }
-          .width('100%')
-          .layoutWeight(1)
-          .justifyContent(FlexAlign.Center)
-          .backgroundColor(colors.white)
-          .borderRadius(size.middleBorderRaduis)
         } else {
-          List() {
-            ForEach(this.docDirList, (directory: DirectoryDocType, index: number) => {
-              ListItem() {
-                Column() {
-                  // 目录条目：目录名称 + 箭头
-                  Row() {
-                    Text(directory.directoryName)
-                      .fontSize(size.middleFont)
-                      .maxLines(1)
-                      .textOverflow({ overflow: TextOverflow.Ellipsis })
-                      .layoutWeight(1)
-                    Image($r("app.media.icon_arrow"))
-                      .width(size.smallIcon)
-                      .height(size.smallIcon)
-                      .opacity(size.opacity)
-                      // 展开时箭头顺时针旋转90度变成向下
-                      .rotate({ angle: directory.expanded ? 90 : 0 })
-                  }
-                  .width('100%')
-                  .padding(size.middleGap)
-                  .onClick(() => {
-                    this.toggleDirectory(index);
-                  })
-
-                  // 目录下的文档列表
-                  if (directory.expanded) {
-                    ForEach(directory.docList, (doc: DocumentType) => {
-                      Row() {
-                        Text(doc.name)
-                          .fontSize(size.middleFont)
-                          .maxLines(2)
-                          .textOverflow({ overflow: TextOverflow.Ellipsis })
-                          .layoutWeight(1)
-                        // 文档复选框，勾选后确定按钮激活
-                        Checkbox({ name: doc.id, group: 'docSelectGroup' })
-                          .select(this.checkedDocIds.includes(doc.id))
-                          .width(size.middleIcon)
-                          .height(size.middleIcon)
-                          .onChange((value: boolean) => {
-                            this.toggleDocChecked(doc.id, value);
-                          })
-                      }
-                      .width('100%')
-                      .padding({
-                        left: size.middleGap,
-                        right: size.middleGap,
-                        top: size.smallGap,
-                        bottom: size.smallGap
-                      })
-                    }, (doc: DocumentType) => `${doc.id}_${this.checkedDocIds.includes(doc.id)}`)
-                  }
-                }
-                .width('100%')
-                // 每个目录用一条灰色横线隔开
-                .border({
-                  width: { bottom: index === this.docDirList.length - 1 ? 0 : 1 },
-                  color: { bottom: colors.borderColor },
-                  style: { bottom: BorderStyle.Solid }
-                })
-              }
-            }, (directory: DirectoryDocType) => `${directory.directoryId}_${directory.expanded}_${directory.docList.length}`)
+          // 公共文档页签：按 directoryName 分组的目录列表卡片（文档已全部返回，展开即可显示）
+          if (this.publicDocDirList.length === 0) {
+            this.docEmptyCardBuilder('暂无文档')
+          } else {
+            this.publicDocSelectListBuilder()
           }
-          .width('100%')
-          .layoutWeight(1)
-          .backgroundColor(colors.white)
-          .borderRadius(size.middleBorderRaduis)
         }
 
         // 取消/确定按钮
@@ -2154,6 +2204,155 @@ export default struct ChatPage {
     .width('100%')
     .backgroundColor(colors.white)
     .borderRadius({ topLeft: size.middleBorderRaduis, topRight: size.middleBorderRaduis })
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 选择文档对话框的空态卡片
+   * @date: 2026-09-21
+   */
+  @Builder
+  docEmptyCardBuilder(emptyText: string) {
+    Column() {
+      Text(emptyText)
+        .fontColor(colors.gray)
+        .padding(size.middleGap)
+    }
+    .width('100%')
+    .layoutWeight(1)
+    .justifyContent(FlexAlign.Center)
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 目录条目（我的文档与公共文档共用）：目录名称 + 名称右边的展开箭头，点击展开/收起
+   * @date: 2026-09-21
+   */
+  @Builder
+  docDirectoryHeaderBuilder(directory: DirectoryDocType, index: number, isPublic: boolean) {
+    Row() {
+      Text(directory.directoryName)
+        .fontSize(size.middleFont)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .layoutWeight(1)
+      Image($r("app.media.icon_arrow"))
+        .width(size.smallIcon)
+        .height(size.smallIcon)
+        .opacity(size.opacity)
+        // 展开时箭头顺时针旋转90度变成向下
+        .rotate({ angle: directory.expanded ? 90 : 0 })
+    }
+    .width('100%')
+    .padding(size.middleGap)
+    .onClick(() => {
+      if (isPublic) {
+        // 公共文档已经返回全部文档，展开/收起不需要请求接口
+        this.togglePublicDirectory(index);
+      } else {
+        this.toggleDirectory(index);
+      }
+    })
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 文档条目：文档名称 + 复选框，勾选后确定按钮激活
+   * @date: 2026-09-21
+   */
+  @Builder
+  docSelectItemBuilder(doc: DocumentType) {
+    Row() {
+      Text(doc.name)
+        .fontSize(size.middleFont)
+        .maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .layoutWeight(1)
+      Checkbox({ name: doc.id, group: 'docSelectGroup' })
+        .select(this.checkedDocIds.includes(doc.id))
+        .width(size.middleIcon)
+        .height(size.middleIcon)
+        .onChange((value: boolean) => {
+          this.toggleDocChecked(doc.id, value);
+        })
+    }
+    .width('100%')
+    .padding({
+      left: size.middleGap,
+      right: size.middleGap,
+      top: size.smallGap,
+      bottom: size.smallGap
+    })
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 我的文档页签的目录列表卡片，点击目录才加载该目录下的文档列表
+   * @date: 2026-09-21
+   */
+  @Builder
+  myDocSelectListBuilder() {
+    List() {
+      ForEach(this.docDirList, (directory: DirectoryDocType, index: number) => {
+        ListItem() {
+          Column() {
+            this.docDirectoryHeaderBuilder(directory, index, false)
+            if (directory.expanded) {
+              ForEach(directory.docList, (doc: DocumentType) => {
+                this.docSelectItemBuilder(doc)
+              }, (doc: DocumentType) => `${doc.id}_${this.checkedDocIds.includes(doc.id)}`)
+            }
+          }
+          .width('100%')
+          // 每个目录用一条灰色横线隔开
+          .border({
+            width: { bottom: index === this.docDirList.length - 1 ? 0 : 1 },
+            color: { bottom: colors.borderColor },
+            style: { bottom: BorderStyle.Solid }
+          })
+        }
+      }, (directory: DirectoryDocType) => `${directory.directoryId}_${directory.expanded}_${directory.docList.length}`)
+    }
+    .width('100%')
+    .layoutWeight(1)
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
+  }
+
+  /**
+   * @author: wuwenqiang
+   * @description: 公共文档页签的目录列表卡片，按 directoryName 分组，展开直接显示文档列表
+   * @date: 2026-09-21
+   */
+  @Builder
+  publicDocSelectListBuilder() {
+    List() {
+      ForEach(this.publicDocDirList, (directory: DirectoryDocType, index: number) => {
+        ListItem() {
+          Column() {
+            this.docDirectoryHeaderBuilder(directory, index, true)
+            if (directory.expanded) {
+              ForEach(directory.docList, (doc: DocumentType) => {
+                this.docSelectItemBuilder(doc)
+              }, (doc: DocumentType) => `${doc.id}_${this.checkedDocIds.includes(doc.id)}`)
+            }
+          }
+          .width('100%')
+          // 每个目录用一条灰色横线隔开
+          .border({
+            width: { bottom: index === this.publicDocDirList.length - 1 ? 0 : 1 },
+            color: { bottom: colors.borderColor },
+            style: { bottom: BorderStyle.Solid }
+          })
+        }
+      }, (directory: DirectoryDocType) => `${directory.directoryName}_${directory.expanded}_${directory.docList.length}`)
+    }
+    .width('100%')
+    .layoutWeight(1)
+    .backgroundColor(colors.white)
+    .borderRadius(size.middleBorderRaduis)
   }
 
   /**
